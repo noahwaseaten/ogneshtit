@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageCard } from "@/lib/discord";
 import Link from "next/link";
 import { Phone, Truck, Axe, ChevronRight } from "lucide-react";
 import { MyCoords } from "@/components/MyCoords";
@@ -23,6 +24,7 @@ const RULES = [
 export default function Pomogni() {
   return (
     <div className="flex flex-col gap-6">
+      <PageCard title="Какво можете да направите" body="Звъннете на 112 с точните си координати, проверете камион с дървесина и подайте сигнал за незаконна сеч." path="/pomogni" />
       <h1 className="px-1 pt-2 font-display text-[32px] font-bold tracking-[-0.01em] lg:text-[40px]">Какво можете да направите</h1>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">

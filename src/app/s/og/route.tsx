@@ -12,7 +12,14 @@ export async function GET(req: NextRequest) {
   const name = (p.get("n") ?? "").slice(0, 40) || "България";
   if (!(lat > 40 && lat < 45.5 && lon > 21 && lon < 30)) return new Response("bad place", { status: 400 });
   const r = (x: number) => Math.round(x * 100) / 100;
-  const [risk, fonts] = await Promise.all([getRisk(r(lat), r(lon)), ogFonts()]);
+  let risk: Awaited<ReturnType<typeof getRisk>>;
+  try {
+    risk = await getRisk(r(lat), r(lon));
+  } catch {
+    // Weather service down: fall back to the general card rather than a broken image.
+    return Response.redirect(new URL("/opengraph-image", req.nextUrl), 302);
+  }
+  const fonts = await ogFonts();
   const d = dangerByKey(risk.today.danger);
   const bg = DANGER_HEX[d.key];
   const fg = d.onColor;
@@ -30,7 +37,7 @@ export async function GET(req: NextRequest) {
           <div style={{ fontSize: 30, fontWeight: 500, opacity: 0.85 }}>{date}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginTop: 48 }}>
-          <div style={{ fontSize: 38, fontWeight: 500, opacity: 0.9 }}>Опасност от горски пожар днес, {name}</div>
+          <div style={{ fontSize: 38, fontWeight: 500, opacity: 0.9 }}>{`Опасност от горски пожар днес, ${name}`}</div>
           <div style={{ fontSize: 128, fontWeight: 700, lineHeight: 1, marginTop: 8 }}>{d.label}</div>
           <div style={{ fontSize: 32, fontWeight: 500, marginTop: 16, opacity: 0.92 }}>{d.meaning}</div>
         </div>
@@ -47,7 +54,7 @@ export async function GET(req: NextRequest) {
             );
           })}
           <div style={{ display: "flex", marginLeft: "auto", alignItems: "center", fontSize: 26, fontWeight: 500, opacity: 0.85 }}>
-            ниво {d.index + 1} от {DANGERS.length}
+            {`ниво ${d.index + 1} от ${DANGERS.length}`}
           </div>
         </div>
       </div>
