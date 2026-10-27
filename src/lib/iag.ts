@@ -1,5 +1,6 @@
 import { cacheLife } from "next/cache";
 import { RDG_SEATS } from "@/data/rdg";
+import { loadBackup } from "./backup";
 
 // Public registers of the Executive Forest Agency (Изпълнителна агенция по горите, iag.bg).
 // The site's own pages call these endpoints; we call them server-side and cache the answers.
@@ -31,7 +32,12 @@ export type FireStats = {
   vegetation: Share[]; // decares
   ownership: Share[]; // decares
   updated: string;
+  /** Set when ИАГ did not answer and this is the saved copy. */
+  backupFrom?: string;
 };
+
+export const statsBackupKey = (year: number) => `iag-stats-${year}`;
+export const RDG_BACKUP = "rdgs";
 
 function rows(html: string) {
   return [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].map((m) =>
@@ -91,8 +97,15 @@ export function getFireYear(year: number, today: string) {
 
 export const FIRST_YEAR = 2007;
 
-export async function getFireStats(year: number) {
-  return getFireYear(year, sofiaToday());
+export async function getFireStats(year: number): Promise<FireStats> {
+  try {
+    return await getFireYear(year, sofiaToday());
+  } catch (e) {
+    const saved = await loadBackup<FireStats>(statsBackupKey(year));
+    if (!saved) throw e;
+    console.error("ИАГ stats: serving backup from", saved.saved, e);
+    return { ...saved.data, backupFrom: saved.saved };
+  }
 }
 
 export type FireHistory = {
@@ -106,7 +119,7 @@ export async function getFireHistory(): Promise<FireHistory> {
   const today = sofiaToday();
   const last = Number(today.slice(0, 4));
   const years = Array.from({ length: last - FIRST_YEAR + 1 }, (_, i) => FIRST_YEAR + i);
-  const all = (await Promise.all(years.map((y) => getFireYear(y, today).catch(() => null)))).filter((s): s is FireStats => !!s);
+  const all = (await Promise.all(years.map((y) => getFireStats(y).catch(() => null)))).filter((s): s is FireStats => !!s);
   if (all.length === 0) throw new Error("ИАГ: няма данни");
   const regions: Record<string, number[]> = {};
   all.forEach((s, i) => {
@@ -309,11 +322,15 @@ async function getRdgContact(id: number) {
   return { phone, email, site };
 }
 
+/** Directorates with their office phone and e-mail. A contact ИАГ did not return comes from the saved copy. */
 export async function getRdgs(): Promise<Rdg[]> {
-  return Promise.all(
+  const live = await Promise.all(
     RDG_SEATS.map(async (s) => {
       const c = await getRdgContact(s.id).catch(() => ({ phone: "", email: "", site: "" }));
       return { ...s, ...c };
     }),
   );
+  if (live.every((r) => r.phone || r.email)) return live;
+  const saved = (await loadBackup<Rdg[]>(RDG_BACKUP))?.data ?? [];
+  return live.map((r) => (r.phone || r.email ? r : { ...r, ...(saved.find((x) => x.id === r.id) ?? {}) }));
 }

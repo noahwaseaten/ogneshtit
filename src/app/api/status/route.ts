@@ -9,8 +9,16 @@ export type SourceStatus = {
   ok: boolean;
   /** When we last got fresh data from the source. */
   updated: string | null;
-  /** For satellites: the newest detection, which says more than the fetch time. */
+  /** For satellites: the newest pass over the region, which says more than the fetch time. */
   latest?: string | null;
+  /**
+   * live: the source answered. approx: it did not, and a second source filled in (weather from MET Norway).
+   * backup: it did not, and this is the copy saved at `backupFrom`.
+   */
+  mode?: "live" | "approx" | "backup";
+  backupFrom?: string | null;
+  /** Satellite feeds that failed while the others worked. */
+  failed?: string[];
 };
 export type StatusResponse = { sources: SourceStatus[]; checked: string };
 
@@ -31,12 +39,22 @@ export async function GET() {
   ]);
   const val = <T,>(r: PromiseSettledResult<T>) => (r.status === "fulfilled" ? r.value : null);
   const f = val(fires);
-  const newest = f?.hotspots.reduce<string | null>((m, h) => (!m || h.time > m ? h.time : m), null) ?? null;
+  const w = val(risk);
+  const wn = val(warnings);
+  const st = val(stats);
   const sources: SourceStatus[] = [
-    { key: "weather", ok: !!val(risk), updated: val(risk)?.updated ?? null },
-    { key: "fires", ok: !!f, updated: f?.updated ?? null, latest: newest },
-    { key: "warnings", ok: !!val(warnings), updated: val(warnings)?.updated ?? null },
-    { key: "iag", ok: !!val(stats) && !!val(rdgs), updated: val(stats)?.updated ?? null },
+    { key: "weather", ok: !!w, updated: w?.updated ?? null, mode: w?.approx ? "approx" : "live" },
+    {
+      key: "fires",
+      ok: !!f,
+      updated: f?.backupFrom ?? f?.updated ?? null,
+      latest: f?.lastPass ?? null,
+      mode: f?.backupFrom ? "backup" : "live",
+      backupFrom: f?.backupFrom ?? null,
+      failed: f?.failed ?? [],
+    },
+    { key: "warnings", ok: !!wn, updated: wn?.backupFrom ?? wn?.updated ?? null, mode: wn?.backupFrom ? "backup" : "live", backupFrom: wn?.backupFrom ?? null },
+    { key: "iag", ok: !!st && !!val(rdgs), updated: st?.backupFrom ?? st?.updated ?? null, mode: st?.backupFrom ? "backup" : "live", backupFrom: st?.backupFrom ?? null },
   ];
   return Response.json({ sources, checked: new Date().toISOString() } satisfies StatusResponse, {
     headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },

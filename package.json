@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:fwi": "tsx scripts/test-fwi.ts",
+    "test:fires": "tsx scripts/test-fires.ts",
     "typecheck": "tsc --noEmit",
     "map": "node scripts/oblasts.mjs",
     "border": "node scripts/bulgaria.mjs"

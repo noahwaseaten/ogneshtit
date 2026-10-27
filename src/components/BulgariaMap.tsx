@@ -6,7 +6,7 @@ import { MAP_H, MAP_W, OBLASTS, UNITS_PER_KM, project } from "@/data/oblasts";
 import { PLACES } from "@/data/places";
 import { useI18n } from "@/i18n/client";
 import { placeName } from "@/i18n/names";
-import { MapFire, MapFireGroup, type FireAge } from "./FireMark";
+import { MapFire, MapFireGroup } from "./FireMark";
 
 // A plain SVG map of Bulgaria's 28 oblasts. No tiles and no map library: it draws instantly and
 // works offline. With `zoomable` it pans and zooms by drag, pinch, wheel, double tap and buttons.
@@ -15,16 +15,16 @@ import { MapFire, MapFireGroup, type FireAge } from "./FireMark";
 // React only re-renders when the gesture ends, which is when markers are re-clustered.
 
 /**
- * A point on the map. Fires also carry `tier` (heat step 0..3) and `age`, and are drawn with FireMark.
+ * A point on the map, drawn as a fire (FireMark): `tier` is the heat step 0..3, `pale` means not current.
  * `rank` decides which fire leads a group (lowest wins).
  */
-export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number; tier?: number; age?: FireAge };
+export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number; tier?: number; pale?: boolean };
 /** Floating map control surface. */
 const ctl = "bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] transition-colors duration-150";
 
 const lead = (pts: MapPoint[]) => [...pts].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))[0];
 const pointColor = (pts: MapPoint[]) => lead(pts)?.color ?? "var(--ember)";
-const groupAge = (pts: MapPoint[]): FireAge => (pts.some((p) => p.age === "fresh") ? "fresh" : pts.every((p) => p.age === "old") ? "old" : "day");
+const groupPale = (pts: MapPoint[]) => pts.every((p) => p.pale);
 
 const MAJOR = new Set(["София", "Пловдив", "Варна", "Бургас", "Русе", "Плевен", "Стара Загора", "Благоевград"]);
 const MAX_ZOOM = 40;
@@ -541,7 +541,7 @@ export function BulgariaMap({
                     <g key={p.id} role="button" tabIndex={0} aria-label={p.label} className="cursor-pointer outline-none" onClick={() => tap(() => onPoints?.([p]))} onKeyDown={onKey(() => onPoints?.([p]))}>
                       <line x1={c.x} y1={c.y} x2={x} y2={y} stroke="var(--muted)" strokeWidth={1 * upp} />
                       <circle cx={x} cy={y} r={14 * upp} fill="transparent" />
-                      <MapFire x={x} y={y} upp={upp} tier={p.tier ?? 1} age={p.age ?? "day"} color={p.color ?? "var(--ember)"} seed={i} />
+                      <MapFire x={x} y={y} upp={upp} tier={p.tier ?? 1} pale={!!p.pale} color={p.color ?? "var(--ember)"} seed={i} />
                     </g>
                   );
                 })}
@@ -561,9 +561,9 @@ export function BulgariaMap({
             >
               <circle cx={c.x} cy={c.y} r={22 * upp} fill="transparent" />
               {n === 1 ? (
-                <MapFire x={c.x} y={c.y} upp={upp} tier={first.tier ?? 1} age={first.age ?? "day"} color={first.color ?? "var(--ember)"} seed={ci} />
+                <MapFire x={c.x} y={c.y} upp={upp} tier={first.tier ?? 1} pale={!!first.pale} color={first.color ?? "var(--ember)"} seed={ci} />
               ) : (
-                <MapFireGroup x={c.x} y={c.y} upp={upp} n={n} age={groupAge(c.pts)} color={pointColor(c.pts)} fontPx={fontPx} />
+                <MapFireGroup x={c.x} y={c.y} upp={upp} n={n} pale={groupPale(c.pts)} color={pointColor(c.pts)} fontPx={fontPx} />
               )}
             </g>
           );

@@ -12,10 +12,17 @@ import { REPO } from "./Shell";
 type Source = { key: SourceStatus["key"] | null; name: [string, string]; what: [string, string]; href: string };
 const SOURCES: Source[] = [
   { key: "weather", name: ["Open-Meteo", "Open-Meteo"], what: ["Време, опасност и въздух", "Weather, danger and air"], href: "https://open-meteo.com" },
-  { key: "fires", name: ["NASA FIRMS", "NASA FIRMS"], what: ["Огън от спътник", "Fire seen by satellite"], href: "https://firms.modaps.eosdis.nasa.gov" },
+  { key: null, name: ["MET Norway", "MET Norway"], what: ["Резервна прогноза, ако Open-Meteo не отговаря", "Backup forecast if Open-Meteo is down"], href: "https://api.met.no" },
+  {
+    key: "fires",
+    name: ["NASA FIRMS", "NASA FIRMS"],
+    what: ["Огън от 5 спътника (VIIRS и MODIS)", "Fire from 5 satellites (VIIRS and MODIS)"],
+    href: "https://firms.modaps.eosdis.nasa.gov",
+  },
   { key: "iag", name: ["ИАГ", "Executive Forest Agency"], what: ["Пожари, превозни билети, дирекции", "Fires, transport tickets, directorates"], href: "https://www.iag.bg" },
   { key: "warnings", name: ["НИМХ", "NIMH"], what: ["Предупреждения за времето", "Weather warnings"], href: "https://meteoalarm.org" },
   { key: null, name: ["EFFIS", "EFFIS"], what: ["Скалата за опасност", "The danger scale"], href: "https://forest-fire.emergency.copernicus.eu" },
+  { key: null, name: ["Photon (OpenStreetMap)", "Photon (OpenStreetMap)"], what: ["Резервно търсене на места", "Backup place search"], href: "https://photon.komoot.io" },
 ];
 
 export function SettingsView() {
@@ -68,8 +75,8 @@ export function SettingsView() {
       <SettingsGroup
         title={t("Данни", "Data")}
         note={t(
-          "ОгнеЩит не е официален източник. Ако някой източник не отговаря, показваме последните данни, които имаме, и пишем от кога са.",
-          "Fire Shield is not an official source. If a source isn't responding, we show the last data we have and say how old it is.",
+          "ОгнеЩит не е официален източник. Всеки източник има резерва: втора услуга или копие на последните данни, запазвано на всеки 6 часа. Когато ползваме резервата, пишем го и казваме от кога са данните.",
+          "Fire Shield is not an official source. Every source has a fallback: a second service, or a copy of the latest data saved every 6 hours. When we use it, we say so and how old the data is.",
         )}
       >
         {SOURCES.map((s) => (
@@ -102,16 +109,32 @@ export function SettingsView() {
   );
 }
 
-/** "обновено преди 5 мин" with a green dot, or "Не отговаря" with a red one. Words carry the meaning, not only colour. */
+/**
+ * "обновено преди 5 мин" with a green dot; an amber dot when a fallback is in use; a red one when nothing works.
+ * Words carry the meaning, not only colour.
+ */
 function SourceState({ s, loading }: { s?: SourceStatus; loading: boolean }) {
   const { t, ago } = useI18n();
   if (loading) return <span className="block pt-1 text-[13px] text-muted">{t("Проверяваме…", "Checking…")}</span>;
   if (!s) return null;
   const when = s.updated;
+  const degraded = s.ok && (s.mode === "backup" || s.mode === "approx" || (s.failed?.length ?? 0) > 0);
+  const color = !s.ok ? "var(--d-veryhigh)" : degraded ? "var(--d-moderate)" : "var(--d-low)";
+  const text = !s.ok
+    ? t("не отговаря, а няма и запазено копие", "not responding, and no saved copy")
+    : s.mode === "backup"
+      ? t(`не отговаря; ползваме копие от ${ago(s.backupFrom ?? when ?? "")}`, `not responding; using a copy from ${ago(s.backupFrom ?? when ?? "")}`)
+      : s.mode === "approx"
+        ? t("не отговаря; ползваме MET Norway", "not responding; using MET Norway")
+        : (s.failed?.length ?? 0) > 0
+          ? t(`обновено ${ago(when ?? "")}, без ${s.failed!.join(", ")}`, `updated ${ago(when ?? "")}, without ${s.failed!.join(", ")}`)
+          : when
+            ? t(`обновено ${ago(when)}`, `updated ${ago(when)}`)
+            : t("работи", "working");
   return (
-    <span className="flex items-center gap-1.5 pt-1 text-[13px] tabular-nums text-content">
-      <span className="size-2 rounded-full" style={{ background: s.ok ? "var(--d-low)" : "var(--d-veryhigh)" }} aria-hidden />
-      {s.ok ? (when ? t(`обновено ${ago(when)}`, `updated ${ago(when)}`) : t("работи", "working")) : t("не отговаря", "not responding")}
+    <span className="flex items-start gap-1.5 pt-1 text-[13px] tabular-nums text-content">
+      <span className="mt-[5px] size-2 shrink-0 rounded-full" style={{ background: color }} aria-hidden />
+      {text}
     </span>
   );
 }

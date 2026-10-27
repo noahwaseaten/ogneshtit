@@ -1,20 +1,10 @@
-// How a satellite fire looks everywhere in the app (map, lists, legend).
+// How a satellite fire looks everywhere in the app (map, lists, legend). Two rules, nothing else:
 //
-//   shape  = how recent: a flame for the last 24 h, a small ember for older ones
-//   size   = how much heat (4 steps), and so does the colour (--heat-1..4); colour is never the only signal
-//   motion = how fresh: under 6 h the flame breathes a soft glow; strong flames also flicker
+//   bigger and redder = more heat (4 steps, --heat-1..4)
+//   pale              = not current: last seen over a day ago, or no longer seen by a later satellite pass
 //
-// All motion is transform and opacity only (60 fps) and stops with prefers-reduced-motion.
-
-export type FireAge = "fresh" | "day" | "old";
-
-export const FRESH_H = 6;
-export const OLD_H = 24;
-
-export const fireAge = (iso: string, now = Date.now()): FireAge => {
-  const h = (now - new Date(iso).getTime()) / 3600e3;
-  return h < FRESH_H ? "fresh" : h < OLD_H ? "day" : "old";
-};
+// Strong current fires flicker a little; marks pop in when the map loads. Motion is decoration only, uses
+// transform and opacity (60 fps) and stops with prefers-reduced-motion.
 
 /** Flame drawn in a 24 × 24 box; the body's centre is at (12, 15). */
 export const FLAME =
@@ -25,30 +15,23 @@ const CENTER_Y = 15;
 
 /** On-screen size of the flame for each heat step, in CSS px. */
 export const FLAME_PX = [15, 18, 21, 25] as const;
+export const PALE = 0.42;
 
 const delay = (seed: number, period: number) => `${-((seed * 0.618) % 1) * period}s`;
 
 /**
  * One fire on the SVG map. `upp` is map units per CSS pixel, so the mark keeps its screen size at any zoom.
- * `seed` spreads the animations so neighbouring fires never pulse in step.
+ * `seed` spreads the flicker so neighbouring fires never move in step.
  */
-export function MapFire({ x, y, upp, tier, age, color, seed = 0 }: { x: number; y: number; upp: number; tier: number; age: FireAge; color: string; seed?: number }) {
-  if (age === "old") {
-    return (
-      <g pointerEvents="none">
-        <circle cx={x} cy={y} r={4.5 * upp} fill={color} fillOpacity={0.28} stroke={color} strokeOpacity={0.7} strokeWidth={1.25 * upp} />
-        <circle cx={x} cy={y} r={1.6 * upp} fill={color} fillOpacity={0.85} />
-      </g>
-    );
-  }
+export function MapFire({ x, y, upp, tier, pale, color, seed = 0 }: { x: number; y: number; upp: number; tier: number; pale: boolean; color: string; seed?: number }) {
   const px = FLAME_PX[tier] ?? FLAME_PX[0];
   const s = (px / 24) * upp;
+  const flicker = tier >= 2 && !pale;
   return (
-    <g pointerEvents="none">
-      {age === "fresh" && <circle className="fire-halo" cx={x} cy={y} r={px * 0.62 * upp} fill={color} style={{ animationDelay: delay(seed, 2.4) }} />}
+    <g pointerEvents="none" opacity={pale ? PALE : 1}>
       <g transform={`translate(${x - 12 * s} ${y - CENTER_Y * s}) scale(${s})`}>
         <g className="fire-pop" style={{ animationDelay: `${Math.min(seed, 16) * 22}ms` }}>
-          <g className={tier >= 2 ? "fire-flicker" : undefined} style={tier >= 2 ? { animationDelay: delay(seed + 1, 1.7) } : undefined}>
+          <g className={flicker ? "fire-flicker" : undefined} style={flicker ? { animationDelay: delay(seed + 1, 1.7) } : undefined}>
             <path d={FLAME} fill={color} stroke="var(--card)" strokeWidth={1.6} vectorEffect="non-scaling-stroke" strokeLinejoin="round" style={{ paintOrder: "stroke" }} />
             <path d={CORE} fill="#fff6dc" fillOpacity={0.92} />
           </g>
@@ -58,26 +41,20 @@ export function MapFire({ x, y, upp, tier, age, color, seed = 0 }: { x: number; 
   );
 }
 
-/** A group of fires that would overlap: a pill with the hottest fire's mark and the count. */
-export function MapFireGroup({ x, y, upp, n, age, color, fontPx }: { x: number; y: number; upp: number; n: number; age: FireAge; color: string; fontPx: number }) {
+/** Fires that would overlap on screen: a pill with the hottest one's flame and how many there are. */
+export function MapFireGroup({ x, y, upp, n, pale, color, fontPx }: { x: number; y: number; upp: number; n: number; pale: boolean; color: string; fontPx: number }) {
   const digits = String(n).length;
   const h = 24 * upp;
   const w = (30 + digits * 7.5) * upp;
   const left = x - w / 2;
-  const icon = 15;
-  const s = (icon / 24) * upp;
+  const s = (15 / 24) * upp;
   return (
-    <g pointerEvents="none">
-      {age === "fresh" && <rect className="fire-halo" x={left} y={y - h / 2} width={w} height={h} rx={h / 2} fill={color} />}
+    <g pointerEvents="none" opacity={pale ? 0.6 : 1}>
       <g className="fire-pop">
         <rect x={left} y={y - h / 2} width={w} height={h} rx={h / 2} fill="var(--card)" stroke={color} strokeWidth={2 * upp} />
-        {age === "old" ? (
-          <circle cx={left + 13 * upp} cy={y} r={4 * upp} fill={color} fillOpacity={0.5} />
-        ) : (
-          <g transform={`translate(${left + 13 * upp - 12 * s} ${y - CENTER_Y * s}) scale(${s})`}>
-            <path d={FLAME} fill={color} />
-          </g>
-        )}
+        <g transform={`translate(${left + 13 * upp - 12 * s} ${y - CENTER_Y * s}) scale(${s})`}>
+          <path d={FLAME} fill={color} />
+        </g>
         <text x={left + 22 * upp} y={y} dy="0.35em" fontSize={fontPx} fontWeight={700} fill="var(--content)" style={{ fontVariantNumeric: "tabular-nums" }}>
           {n}
         </text>
@@ -86,19 +63,12 @@ export function MapFireGroup({ x, y, upp, n, age, color, fontPx }: { x: number; 
   );
 }
 
-/** The same mark for HTML: lists, sheets, the legend. */
-export function FireIcon({ tier, age, color, size }: { tier: number; age: FireAge; color: string; size?: number }) {
+/** The same flame for HTML: lists, sheets, the legend. */
+export function FireIcon({ tier, pale = false, color, size }: { tier: number; pale?: boolean; color: string; size?: number }) {
   const px = size ?? FLAME_PX[tier] ?? FLAME_PX[0];
-  if (age === "old")
-    return (
-      <svg width={px} height={px} viewBox="0 0 24 24" aria-hidden className="shrink-0">
-        <circle cx="12" cy="12" r="6" fill={color} fillOpacity={0.28} stroke={color} strokeOpacity={0.7} strokeWidth="1.75" />
-        <circle cx="12" cy="12" r="2.2" fill={color} fillOpacity={0.85} />
-      </svg>
-    );
   return (
-    <svg width={px} height={px} viewBox="0 0 24 24" aria-hidden className="shrink-0 overflow-visible">
-      <g className={tier >= 2 ? "fire-flicker" : undefined}>
+    <svg width={px} height={px} viewBox="0 0 24 24" aria-hidden className="shrink-0 overflow-visible" opacity={pale ? PALE : 1}>
+      <g className={tier >= 2 && !pale ? "fire-flicker" : undefined}>
         <path d={FLAME} fill={color} />
         <path d={CORE} fill="#fff6dc" fillOpacity={0.92} />
       </g>
@@ -106,15 +76,11 @@ export function FireIcon({ tier, age, color, size }: { tier: number; age: FireAg
   );
 }
 
-/**
- * List lead: a tile tinted with the fire's heat, the flame sized by heat inside, and for fires under
- * 6 hours old a glow that breathes out from the tile.
- */
-export function FireTile({ tier, age, color }: { tier: number; age: FireAge; color: string }) {
+/** List lead: a tile tinted with the fire's heat, the flame sized by heat inside. */
+export function FireTile({ tier, pale, color }: { tier: number; pale: boolean; color: string }) {
   return (
-    <span className="relative grid size-10 shrink-0 place-items-center rounded-xl" style={{ background: `color-mix(in oklab, ${color} ${age === "old" ? 10 : 16}%, transparent)` }}>
-      {age === "fresh" && <span aria-hidden className="fire-halo absolute inset-0 rounded-xl" style={{ background: color }} />}
-      <FireIcon tier={tier} age={age} color={color} />
+    <span className="grid size-10 shrink-0 place-items-center rounded-xl" style={{ background: `color-mix(in oklab, ${color} ${pale ? 8 : 16}%, transparent)` }}>
+      <FireIcon tier={tier} pale={pale} color={color} />
     </span>
   );
 }
