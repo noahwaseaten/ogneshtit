@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff } from "lucide-react";
+import Link from "next/link";
+import { Bell, BellOff, ChevronRight } from "lucide-react";
 import { useLocation } from "@/lib/client";
 import { oblastAt } from "@/lib/oblast";
 import { useInstall } from "./Install";
@@ -17,7 +18,7 @@ function keyBytes(b64: string) {
 type State = "loading" | "unsupported" | "needs-install" | "denied" | "off" | "on";
 
 /** Push alerts for the chosen place: high fire danger and satellite fires within 25 km. */
-export function Alerts() {
+export function Alerts({ help = false }: { help?: boolean }) {
   const { loc } = useLocation();
   const { ios, standalone } = useInstall();
   const [state, setState] = useState<State>("loading");
@@ -83,7 +84,7 @@ export function Alerts() {
   if (state === "loading" || state === "unsupported") return null;
 
   return (
-    <div className="rounded-[20px] bg-card p-4">
+    <div id={help ? undefined : "izvestiya"} className="scroll-mt-20 rounded-[20px] bg-card p-4">
       <div className="flex items-start gap-3">
         {state === "on" ? <Bell size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-accent" aria-hidden /> : <BellOff size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-muted" aria-hidden />}
         <div className="min-w-0 flex-1">
@@ -96,6 +97,15 @@ export function Alerts() {
                 : "Сутрин, ако опасността е висока или по-голяма, и ако спътник засече огън до 25 км."}
           </p>
           {err && <p className="pt-1 text-[14px] text-ember">{err}</p>}
+          {help && (
+            <Link
+              href={state === "needs-install" ? "/za#install" : "/za#izvestiya"}
+              className="inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-accent"
+            >
+              {state === "needs-install" ? "Как да го добавя" : "Настройки и как работят"}
+              <ChevronRight size={16} strokeWidth={2} aria-hidden />
+            </Link>
+          )}
         </div>
       </div>
       {(state === "off" || state === "on") && (

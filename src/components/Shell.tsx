@@ -48,7 +48,7 @@ export function Sidebar() {
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={`flex min-h-12 items-center gap-3 rounded-full px-4 text-[15px] ${
-                    active ? "bg-accent/15 font-semibold text-content" : "font-medium text-muted hover:bg-line/60 hover:text-content"
+                    active ? "bg-tonal font-semibold text-content" : "font-medium text-muted hover:bg-line/60 hover:text-content"
                   }`}
                 >
                   <Icon size={20} strokeWidth={active ? 2.25 : 1.75} aria-hidden className={active ? "text-accent" : undefined} />
@@ -133,7 +133,7 @@ export function TabBar() {
                 <span className="relative grid h-8 w-14 place-items-center">
                   <span
                     aria-hidden
-                    className={`absolute inset-0 rounded-full bg-accent/15 transition-[transform,opacity] duration-200 ease-[var(--ease-out)] group-focus-visible:ring-2 group-focus-visible:ring-accent ${
+                    className={`absolute inset-0 rounded-full bg-tonal transition-[transform,opacity] duration-200 ease-[var(--ease-out)] group-focus-visible:ring-2 group-focus-visible:ring-accent ${
                       active ? "scale-x-100 opacity-100" : "scale-x-50 opacity-0 group-active:scale-x-90 group-active:opacity-60"
                     }`}
                   />
@@ -173,7 +173,7 @@ export function ThemeControl({ compact }: { compact?: boolean }) {
           title={compact ? label : undefined}
           onClick={() => setTheme(key)}
           className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[14px] font-medium transition-colors duration-150 ${
-            theme === key ? "bg-card text-content shadow-[var(--lift)]" : "text-muted hover:text-content"
+            theme === key ? "bg-tonal text-content" : "text-muted hover:text-content"
           }`}
         >
           <Icon size={17} strokeWidth={1.75} aria-hidden />

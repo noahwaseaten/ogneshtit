@@ -123,8 +123,18 @@ export function BulgariaMap({
       if (wheelTimer.current) clearTimeout(wheelTimer.current);
       wheelTimer.current = setTimeout(commit, 120);
     };
+    // iOS Safari zooms the whole page on pinch unless its gesture events are cancelled.
+    const stop = (e: Event) => e.preventDefault();
     el.addEventListener("wheel", wheel, { passive: false });
-    return () => el.removeEventListener("wheel", wheel);
+    el.addEventListener("gesturestart", stop);
+    el.addEventListener("gesturechange", stop);
+    el.addEventListener("touchmove", stop, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", wheel);
+      el.removeEventListener("gesturestart", stop);
+      el.removeEventListener("gesturechange", stop);
+      el.removeEventListener("touchmove", stop);
+    };
     // paint/zoomBy read refs and the current ratio
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomable, r, commit]);
@@ -198,21 +208,39 @@ export function BulgariaMap({
 
   // --- markers ------------------------------------------------------------------------------
   const projected = useMemo(() => (points ?? []).map((p) => ({ p, xy: project(p.lat, p.lon) })), [points]);
+  // Greedy distance clustering in screen space: a fire joins a group when it would touch it on
+  // screen, so two markers can never overlap (grid cells let neighbours sit on top of each other).
   const clusters = useMemo(() => {
-    const cell = 30 * upp;
-    const groups = new Map<string, { x: number; y: number; pts: MapPoint[]; xs: number[]; ys: number[] }>();
+    const reach = 26 * upp;
+    const groups: { x: number; y: number; pts: MapPoint[]; xs: number[]; ys: number[] }[] = [];
     for (const { p, xy } of projected) {
-      const key = `${Math.floor(xy[0] / cell)}:${Math.floor(xy[1] / cell)}`;
-      const c = groups.get(key);
-      if (c) {
-        c.pts.push(p);
-        c.xs.push(xy[0]);
-        c.ys.push(xy[1]);
-        c.x = c.xs.reduce((s, v) => s + v, 0) / c.xs.length;
-        c.y = c.ys.reduce((s, v) => s + v, 0) / c.ys.length;
-      } else groups.set(key, { x: xy[0], y: xy[1], pts: [p], xs: [xy[0]], ys: [xy[1]] });
+      const near = groups.find((c) => Math.hypot(c.x - xy[0], c.y - xy[1]) < reach);
+      if (near) {
+        near.pts.push(p);
+        near.xs.push(xy[0]);
+        near.ys.push(xy[1]);
+        near.x = near.xs.reduce((s, v) => s + v, 0) / near.xs.length;
+        near.y = near.ys.reduce((s, v) => s + v, 0) / near.ys.length;
+      } else groups.push({ x: xy[0], y: xy[1], pts: [p], xs: [xy[0]], ys: [xy[1]] });
     }
-    return [...groups.values()];
+    // Moving a centre can bring two groups together; merge until nothing overlaps.
+    for (let merged = true; merged; ) {
+      merged = false;
+      outer: for (let i = 0; i < groups.length; i++)
+        for (let j = i + 1; j < groups.length; j++)
+          if (Math.hypot(groups[i].x - groups[j].x, groups[i].y - groups[j].y) < reach) {
+            const a = groups[i];
+            const b = groups.splice(j, 1)[0];
+            a.pts.push(...b.pts);
+            a.xs.push(...b.xs);
+            a.ys.push(...b.ys);
+            a.x = a.xs.reduce((s, v) => s + v, 0) / a.xs.length;
+            a.y = a.ys.reduce((s, v) => s + v, 0) / a.ys.length;
+            merged = true;
+            break outer;
+          }
+    }
+    return groups;
   }, [projected, upp]);
 
   /** Tapping a group zooms to it; if it cannot get any closer, the group opens as a list. */
@@ -243,12 +271,17 @@ export function BulgariaMap({
   return (
     <div
       ref={box}
-      className={`relative overflow-hidden ${zoomable ? "touch-none select-none" : ""} ${className}`}
-      style={className.includes("aspect-") || className.includes("h-") ? undefined : { aspectRatio: `${MAP_W} / ${MAP_H}` }}
+      className={`relative select-none overflow-hidden [-webkit-touch-callout:none] [-webkit-user-select:none] ${zoomable ? "touch-none" : ""} ${className}`}
+      style={{
+        ...(className.includes("aspect-") || className.includes("h-") ? {} : { aspectRatio: `${MAP_W} / ${MAP_H}` }),
+        ...(zoomable ? { touchAction: "none" } : {}),
+      }}
+      onContextMenu={zoomable ? (e) => e.preventDefault() : undefined}
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={up}
+      onLostPointerCapture={up}
     >
       <svg
         ref={svg}

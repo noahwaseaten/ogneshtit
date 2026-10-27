@@ -18,6 +18,8 @@
      segment, sheets) get --lift. */
   --shadow: none;
   --lift: 0 1px 3px oklch(0 0 0 / 0.12);
+  /* Tonal fill for selected segments, chips and the nav indicator (Material 3 "secondary container"). */
+  --tonal: color-mix(in oklab, var(--accent) 20%, var(--card));
   --land: #e4e9e1;
   --land-line: oklch(0 0 0 / 0.14);
 
@@ -85,6 +87,7 @@
   --color-surface: var(--surface);
   --color-card: var(--card);
   --color-raised: var(--raised);
+  --color-tonal: var(--tonal);
   --color-land: var(--land);
   --color-content: var(--content);
   --color-muted: var(--muted);

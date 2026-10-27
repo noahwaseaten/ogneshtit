@@ -36,7 +36,7 @@ export function Today() {
       <div className="min-w-0 lg:sticky lg:top-8">
         <div className="flex flex-col gap-8">
           <FiresSummary loc={loc} />
-          <Alerts />
+          <Alerts help />
         </div>
       </div>
     </div>

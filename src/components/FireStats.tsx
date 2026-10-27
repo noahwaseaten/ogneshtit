@@ -79,7 +79,7 @@ export function FireStats() {
               setRegion(null);
             }}
             className={`pressable min-h-11 shrink-0 rounded-full px-4 text-[15px] font-semibold tabular-nums transition-colors duration-150 ${
-              y === year ? "bg-content text-surface" : "bg-card text-content hover:bg-line"
+              y === year ? "bg-tonal text-content" : "bg-card text-content hover:bg-line"
             }`}
           >
             {y}
@@ -362,7 +362,7 @@ function History({ data, loading, year, onYear }: { data: FireHistory | null; lo
               role="radio"
               aria-checked={metric === m}
               onClick={() => setMetric(m)}
-              className={`min-h-9 rounded-full px-3.5 transition-colors duration-150 ${metric === m ? "bg-card text-content shadow-[var(--lift)]" : "text-muted"}`}
+              className={`min-h-9 rounded-full px-3.5 transition-colors duration-150 ${metric === m ? "bg-tonal text-content" : "text-muted"}`}
             >
               {m === "dka" ? "Изгоряла площ" : "Брой пожари"}
             </button>

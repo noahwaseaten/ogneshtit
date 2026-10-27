@@ -80,7 +80,7 @@ export function MapView() {
                 setRegion(null);
               }}
               className={`min-h-10 truncate rounded-full px-2 text-[15px] font-semibold ${
-                layer === l.key ? "bg-card text-content shadow-[var(--lift)]" : "text-muted active:bg-card/50"
+                layer === l.key ? "bg-tonal text-content" : "text-muted active:bg-card/50"
               }`}
             >
               {l.label}

@@ -44,22 +44,31 @@ export async function getRisk(lat: number, lon: number): Promise<RiskResponse> {
   "use cache";
   cacheLife({ stale: 600, revalidate: 1800, expire: 21600 });
 
+  const [hourly, air] = await Promise.all([fetchHourly([lat], [lon]).then((x) => x[0]), getAir(lat, lon)]);
+  return { ...computeRisk(hourly, lat, lon), air };
+}
+
+const HOURLY = "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation";
+
+/** Open-Meteo accepts many points in one request; it then answers with one object per point. */
+async function fetchHourly(lats: number[], lons: number[]): Promise<OpenMeteo["hourly"][]> {
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.search = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lon),
-    hourly: "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation",
+    latitude: lats.join(","),
+    longitude: lons.join(","),
+    hourly: HOURLY,
     past_days: "45",
     forecast_days: "7",
     timezone: "Europe/Sofia",
     wind_speed_unit: "kmh",
   }).toString();
-
-  const [res, air] = await Promise.all([fetch(url, { signal: AbortSignal.timeout(8000) }), getAir(lat, lon)]);
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
-  const data = (await res.json()) as OpenMeteo;
-  const h = data.hourly;
+  const data = (await res.json()) as OpenMeteo | OpenMeteo[];
+  return (Array.isArray(data) ? data : [data]).map((d) => d.hourly);
+}
 
+function computeRisk(h: OpenMeteo["hourly"], lat: number, lon: number): Omit<RiskResponse, "air"> {
   // Noon weather + rain over the 24 h ending at noon, per day.
   const days: DailyWeather[] = [];
   const dailyRain = new Map<string, number>();
@@ -106,7 +115,6 @@ export async function getRisk(lat: number, lon: number): Promise<RiskResponse> {
     today: toDay(series[idx]),
     forecast: series.slice(idx + 1, idx + 6).map(toDay),
     daysSinceRain,
-    air,
     updated: new Date().toISOString(),
   };
 }
@@ -133,17 +141,19 @@ async function getAir(lat: number, lon: number): Promise<Air | null> {
 
 export type DangerMap = { regions: { code: string; name: string; fwi: number; danger: string; tomorrow: string }[]; updated: string };
 
-/** Today's danger at each oblast's centre. Each point is cached on its own, like a normal lookup. */
+/** Today's danger at each oblast's centre, from one batched weather request so no region goes missing. */
 export async function getDangerMap(): Promise<DangerMap> {
+  "use cache";
+  cacheLife({ stale: 600, revalidate: 1800, expire: 21600 });
   const { OBLASTS } = await import("@/data/oblasts");
-  const r = (x: number) => Math.round(x * 100) / 100;
-  const all = await Promise.all(
-    OBLASTS.map(async (o) => {
-      const risk = await getRisk(r(o.lat), r(o.lon)).catch(() => null);
-      return risk && { code: o.code, name: o.name, fwi: risk.today.fwi, danger: risk.today.danger, tomorrow: risk.forecast[0]?.danger ?? risk.today.danger };
-    }),
+  const hourly = await fetchHourly(
+    OBLASTS.map((o) => o.lat),
+    OBLASTS.map((o) => o.lon),
   );
-  const regions = all.filter((x): x is NonNullable<typeof x> => !!x);
-  if (!regions.length) throw new Error("no weather");
+  if (hourly.length !== OBLASTS.length) throw new Error("Open-Meteo: wrong number of points");
+  const regions = OBLASTS.map((o, i) => {
+    const r = computeRisk(hourly[i], o.lat, o.lon);
+    return { code: o.code, name: o.name, fwi: r.today.fwi, danger: r.today.danger, tomorrow: r.forecast[0]?.danger ?? r.today.danger };
+  });
   return { regions, updated: new Date().toISOString() };
 }
