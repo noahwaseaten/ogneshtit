@@ -122,15 +122,7 @@ export default function FireMap({
           type: "circle",
           source: "fires",
           paint: {
-            "circle-radius": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              6,
-              9,
-              11,
-              16,
-            ],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 9, 11, 16],
             "circle-color": "#c7361f",
             "circle-opacity": 0.18,
           },
@@ -141,15 +133,7 @@ export default function FireMap({
           source: "fires",
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 4, 11, 7],
-            "circle-color": [
-              "match",
-              ["get", "conf"],
-              "high",
-              "#8a1a12",
-              "low",
-              "#e3741b",
-              "#c7361f",
-            ],
+            "circle-color": ["match", ["get", "conf"], "high", "#8a1a12", "low", "#e3741b", "#c7361f"],
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1.5,
           },
@@ -171,20 +155,11 @@ export default function FireMap({
         });
         m.on("click", "fires-halo", (e) => {
           const i = e.features?.[0]?.properties?.i;
-          const h =
-            typeof i === "number" ? latest.current.hotspots[i] : undefined;
+          const h = typeof i === "number" ? latest.current.hotspots[i] : undefined;
           if (h) latest.current.onSelect(h);
         });
-        m.on(
-          "mouseenter",
-          "fires-halo",
-          () => (m.getCanvas().style.cursor = "pointer"),
-        );
-        m.on(
-          "mouseleave",
-          "fires-halo",
-          () => (m.getCanvas().style.cursor = ""),
-        );
+        m.on("mouseenter", "fires-halo", () => (m.getCanvas().style.cursor = "pointer"));
+        m.on("mouseleave", "fires-halo", () => (m.getCanvas().style.cursor = ""));
         sync();
       });
     })();
