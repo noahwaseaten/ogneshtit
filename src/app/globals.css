@@ -115,6 +115,31 @@
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  /* The page keeps room for the scrollbar at all times, so nothing shifts when a page becomes long enough to
+     scroll. The room is painted with the page colour and the track is see-through, so only a thin thumb
+     in the theme's own tone shows. */
+  background: var(--surface);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--content) 22%, transparent) transparent;
+}
+/* Safari and older Chromium, which ignore scrollbar-color. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--content) 22%, transparent) padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--content) 38%, transparent);
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 body {
@@ -240,22 +265,6 @@ p {
 }
 
 /* Satellite fire marks (FireMark.tsx). Transform and opacity only. */
-.fire-halo {
-  transform-box: fill-box;
-  transform-origin: center;
-  opacity: 0;
-  animation: fire-halo 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-@keyframes fire-halo {
-  0% {
-    opacity: 0.42;
-    transform: scale(0.7);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.9);
-  }
-}
 .fire-flicker {
   transform-box: fill-box;
   transform-origin: 50% 92%;
@@ -288,12 +297,8 @@ p {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fire-halo,
   .fire-flicker,
   .fire-pop {
     animation: none;
-  }
-  .fire-halo {
-    opacity: 0.18;
   }
 }

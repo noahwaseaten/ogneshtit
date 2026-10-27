@@ -207,3 +207,13 @@ export async function getPosition(precise = false, lang: Lang = "bg"): Promise<G
     }
   }
 }
+
+/** The current time, rounded to the minute and refreshed every minute; 0 while prerendering. */
+const minute = () => Math.floor(Date.now() / 60e3) * 60e3;
+const everyMinute = (cb: () => void) => {
+  const id = setInterval(cb, 60e3);
+  return () => clearInterval(id);
+};
+export function useNow() {
+  return useSyncExternalStore(everyMinute, minute, () => 0);
+}

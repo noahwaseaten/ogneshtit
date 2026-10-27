@@ -26,11 +26,12 @@ npm run dev            # http://localhost:3000
 npm run typecheck      # run `npx next typegen` first if route types are stale
 npm run lint
 npm run test:fwi       # FWI against Van Wagner & Pickett reference values
+npm run test:fires     # satellite pixels → fires (grouping, confirmation, factories, missed passes)
 npm run build
 npm run map            # regenerate src/data/oblasts.ts from scripts/data/bg-oblasts.geojson
 ```
 
-CI (`.github/workflows/ci.yml`, job `check`) runs typegen, typecheck, lint, test:fwi and build.
+CI (`.github/workflows/ci.yml`, job `check`) runs typegen, typecheck, lint, test:fwi, test:fires and build.
 Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env.local`. Never commit it.
 
 ## Stack and conventions
@@ -55,9 +56,9 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
   `prefers-reduced-motion` respected.
 - Hover and press: always the `hover-fill` class (globals.css), never ad-hoc `hover:bg-*`. Rows in a grouped card are
   edge to edge (`px-4`, no radius) and the card has `overflow-hidden`; rows in a sheet use `-mx-3 px-3 rounded-xl`.
-- Satellite fires are drawn by `FireMark.tsx` everywhere: a flame for the last 24 h (an ember dot when older), flame size
-  and colour by heat (FRP: `--heat-1..4`, `HEAT` in FiresNear), a breathing glow under 6 h, flicker for strong fires;
-  groups are a pill with the count. Animations are transform/opacity only and stop with reduced motion. Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
+- Satellite fires are drawn by `FireMark.tsx` everywhere, with two rules only: bigger and redder = more heat (FRP,
+  `--heat-1..4`, `HEAT` in FiresNear); pale = not current (`isCurrent` false). Groups are a pill with the count. Strong
+  current fires flicker; motion is decoration only (transform/opacity, off with reduced motion). Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
 
 ## Languages (Bulgarian and English)
 
@@ -87,18 +88,22 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
 
 | What | Source | Code |
 | --- | --- | --- |
-| Fire danger | Open-Meteo hourly weather, 45 days back + 7 ahead, noon values → `src/lib/fwi.ts` | `src/lib/risk.ts`, `/api/risk` |
+| Fire danger | Open-Meteo hourly weather, 45 days back + 7 ahead, noon values → `src/lib/fwi.ts`. Fallback: MET Norway forecast carried forward from the saved FWI codes of the nearest oblast (`approx: "met-no"`) | `src/lib/risk.ts`, `/api/risk`, `/api/danger-map` |
 | Air quality | Open-Meteo air-quality API (CAMS) | `getAir()` in `risk.ts` |
-| Hotspots | NASA FIRMS area API (VIIRS SNPP/NOAA-20/NOAA-21, 2 days, needs key) or open 24 h CSVs | `src/lib/fires.ts`, `/api/fires` |
+| Satellite fires | NASA FIRMS area API, 5 feeds (VIIRS SNPP/NOAA-20/NOAA-21 + MODIS), 2 days over the Balkans; days 3 to 12 for permanent sources. Fallback: FIRMS public 24 h files, then the Blob copy. Pixels → fires in `buildFires` (see the comment at the top of fires.ts) | `src/lib/fires.ts`, `src/lib/fire-types.ts`, `/api/fires` |
 | Fires per oblast | ИАГ `POST https://www.iag.bg/fires/lang/1/index` body `ajax=1&FromDate=YYYY-MM-DD&ToDate=…` → HTML tables | `src/lib/iag.ts`, `/api/fire-stats`, `/api/fire-history` |
 | Truck tickets | ИАГ `GET /e_tickets/search?session=000&user_id=1&search_by=2|3&search_text=<digits>&lng=bg` and `/e_tickets/get?...&type=&ticket_id=&digest=xxxn` (JSON) | `iag.ts`, `/api/ticket`, `/api/ticket/[type]/[id]` |
 | Regional directorates | ИАГ pages `/struct/lang/1/type/R/id/{2..17}/unit_single`, scraped weekly (office phone, e-mail; the "дежурен телефон" on some pages is for forestry operators, not the public) | `iag.ts`, `src/data/rdg.ts`, `/api/rdg` |
 | Weather warnings | MeteoAlarm feed `feeds-bulgaria` (НИМХ) | `src/lib/warnings.ts`, `/api/warnings` |
 | Source status (Settings) | The same cached helpers, checked together | `/api/status`, `SettingsView.tsx` |
-| Place search | Open-Meteo geocoding, called from the browser | `LocationPicker.tsx` |
+| Place search | Open-Meteo geocoding from the browser; fallback Photon (OSM), then the built-in oblast capitals | `LocationPicker.tsx` |
+| Saved copies | Every source above, saved to Vercel Blob (`backups/*.json`) at most every 6 h by `/api/cron/backup`; read only when the live source fails, and always shown with its date | `src/lib/backup.ts` |
 | Oblast shapes | Natural Earth admin-1 → `scripts/oblasts.mjs` → `src/data/oblasts.ts` (do not edit by hand) | `BulgariaMap.tsx`, `src/lib/oblast.ts` |
 
 Notes:
+- Never show raw FIRMS pixels. One fire seen by three satellites is one fire; weak single pixels and permanent heat
+  (smelters, power plants, e.g. Pirdop) are hidden by default and never trigger alerts. EFFIS's WFS hotspot layers
+  stopped updating in 2021, so they are not a fallback; Overpass is not reachable from Vercel.
 - A transport ticket is valid 12 hours for one trip. Plates are compared after mapping Cyrillic look-alike letters
   to Latin (`normPlate`). The register matches on digits and returns at most 100 rows.
 - **Privacy:** ticket details deliberately drop driver, issuer and buyer names and phone numbers. Keep it that way.
