@@ -31,12 +31,14 @@ export async function GET(req: Request) {
           get(`https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/${k}/all`),
           get(`https://firms.modaps.eosdis.nasa.gov/mapserver/mapkey_status/?MAP_KEY=${k}`),
         ]
-      : [
-          get(effis("ms:viirs.hs", "&TIME=" + day(1))),
-          get(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=42.7&lon=23.32`, { headers: { "user-agent": "OgneShtit/1.0 github.com/noahwaseaten/ogneshtit" } }),
-          get(`https://photon.komoot.io/api/?q=Банско&limit=2&lang=default&bbox=22.3,41.2,28.7,44.3`),
-          get(`https://api.open-meteo.com/v1/forecast?latitude=42.7&longitude=23.32&current=temperature_2m`),
-          get(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent('[out:json][timeout:20];area["ISO3166-1"="BG"]->.a;(nwr["man_made"="flare"](area.a);nwr["power"="plant"]["plant:source"~"coal|gas|lignite"](area.a););out center 5;')}`),
-        ];
+      : q === "c"
+        ? [
+            get(`https://maps.effis.emergency.copernicus.eu/effis?service=WFS&version=1.1.0&request=GetFeature&typeName=ms:viirs.hs&maxFeatures=3&outputFormat=${encodeURIComponent("application/json; subtype=geojson")}&FILTER=${encodeURIComponent('<Filter><And><PropertyIsGreaterThan><PropertyName>acq_at</PropertyName><Literal>' + day(3) + '</Literal></PropertyIsGreaterThan><PropertyIsEqualTo><PropertyName>gid_0</PropertyName><Literal>BGR</Literal></PropertyIsEqualTo></And></Filter>')}`),
+            get(`https://maps.effis.emergency.copernicus.eu/effis?service=WFS&version=1.1.0&request=GetFeature&typeName=ms:viirs.hs&maxFeatures=3&outputFormat=${encodeURIComponent("application/json; subtype=geojson")}&FILTER=${encodeURIComponent('<Filter><PropertyIsGreaterThan><PropertyName>acq_at</PropertyName><Literal>' + day(3) + '</Literal></PropertyIsGreaterThan></Filter>')}`),
+            get(`https://maps.effis.emergency.copernicus.eu/effis?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms:viirs.hs&count=3&sortBy=acq_at+DESC&outputFormat=${encodeURIComponent("application/json; subtype=geojson")}`),
+            get(`https://maps.effis.emergency.copernicus.eu/effis?service=WFS&version=1.1.0&request=GetFeature&typeName=ms:all.hs.query&maxFeatures=3&outputFormat=${encodeURIComponent("application/json; subtype=geojson")}`),
+            get(`https://firms.modaps.eosdis.nasa.gov/api/area/csv/${k}/VIIRS_NOAA20_NRT/19,39,30,46/1`),
+          ]
+        : [get(effis("ms:viirs.hs", "&TIME=" + day(1)))];
   return Response.json(await Promise.all(jobs));
 }
