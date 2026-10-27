@@ -6,21 +6,32 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prebuild": "node scripts/copy-worker.mjs",
+    "predev": "node scripts/copy-worker.mjs",
+    "test:fwi": "tsx scripts/test-fwi.ts"
   },
   "dependencies": {
+    "@fontsource-variable/onest": "5.3.1",
+    "lucide-react": "1.62.0",
+    "maplibre-gl": "6.16.0",
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "vaul": "1.1.2"
   },
   "devDependencies": {
-    "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
+    "@tailwindcss/turbopack": "4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/topojson-client": "3.1.5",
+    "eslint": "9.39.5",
     "eslint-config-next": "16.4.3",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "tailwindcss": "4.3.3",
+    "topojson-client": "3.1.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "world-atlas": "2.0.2"
   }
 }

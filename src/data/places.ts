@@ -1,0 +1,32 @@
+// Oblast centres — used when the person prefers not to share GPS.
+export type Place = { name: string; lat: number; lon: number };
+
+export const PLACES: Place[] = [
+  { name: "София", lat: 42.698, lon: 23.322 },
+  { name: "Благоевград", lat: 42.021, lon: 23.094 },
+  { name: "Бургас", lat: 42.504, lon: 27.462 },
+  { name: "Варна", lat: 43.214, lon: 27.915 },
+  { name: "Велико Търново", lat: 43.081, lon: 25.629 },
+  { name: "Видин", lat: 43.99, lon: 22.88 },
+  { name: "Враца", lat: 43.204, lon: 23.552 },
+  { name: "Габрово", lat: 42.874, lon: 25.334 },
+  { name: "Добрич", lat: 43.567, lon: 27.828 },
+  { name: "Кърджали", lat: 41.65, lon: 25.37 },
+  { name: "Кюстендил", lat: 42.284, lon: 22.691 },
+  { name: "Ловеч", lat: 43.137, lon: 24.715 },
+  { name: "Монтана", lat: 43.409, lon: 23.225 },
+  { name: "Пазарджик", lat: 42.192, lon: 24.334 },
+  { name: "Перник", lat: 42.605, lon: 23.038 },
+  { name: "Плевен", lat: 43.417, lon: 24.607 },
+  { name: "Пловдив", lat: 42.135, lon: 24.745 },
+  { name: "Разград", lat: 43.525, lon: 26.524 },
+  { name: "Русе", lat: 43.848, lon: 25.954 },
+  { name: "Силистра", lat: 44.117, lon: 27.26 },
+  { name: "Сливен", lat: 42.682, lon: 26.322 },
+  { name: "Смолян", lat: 41.577, lon: 24.701 },
+  { name: "Стара Загора", lat: 42.425, lon: 25.635 },
+  { name: "Търговище", lat: 43.25, lon: 26.572 },
+  { name: "Хасково", lat: 41.934, lon: 25.556 },
+  { name: "Шумен", lat: 43.271, lon: 26.936 },
+  { name: "Ямбол", lat: 42.484, lon: 26.503 },
+];
