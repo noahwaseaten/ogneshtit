@@ -17,6 +17,8 @@ export type Sub = {
   subscription: PushSubscription;
   place: { lat: number; lon: number; label: string; oblast?: string };
   prefs: Prefs;
+  /** Language of the notifications; the app's language when the person subscribed. */
+  lang?: "bg" | "en";
   sent: { danger?: string; fires?: string[]; warnings?: string[]; test?: number }; // what we already sent
   created: string;
 };

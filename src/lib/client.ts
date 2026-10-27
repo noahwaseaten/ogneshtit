@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useLang } from "@/i18n/client";
+import type { Lang } from "@/i18n/lang";
 
 export type Loc = { lat: number; lon: number; label: string; source: "gps" | "place"; region?: string };
 
@@ -40,15 +42,16 @@ export function useLocation() {
   );
   const [locating, setLocating] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const lang = useLang();
 
   const requestGps = useCallback(() => {
     setLocating(true);
     setGpsError(null);
-    getPosition()
+    getPosition(false, lang)
       .then((p) => write({ lat: p.coords.latitude, lon: p.coords.longitude, label: "Тук", source: "gps" }))
       .catch((e: Error) => setGpsError(e.message))
       .finally(() => setLocating(false));
-  }, []);
+  }, [lang]);
 
   return { loc, setLoc: write, requestGps, locating, gpsError };
 }
@@ -59,6 +62,7 @@ type Result<T> = { key: string; url: string; data: T | null; error: string | nul
 export function useJson<T>(url: string | null) {
   const [nonce, setNonce] = useState(0);
   const [res, setRes] = useState<Result<T> | null>(null);
+  const lang = useLang();
   const key = url ? `${url}#${nonce}` : null;
 
   useEffect(() => {
@@ -68,7 +72,7 @@ export function useJson<T>(url: string | null) {
     fetch(url)
       .then(async (r) => {
         const body = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(body?.error ?? "Данните не се заредиха.");
+        if (!r.ok) throw new Error(body?.error ?? (lang === "bg" ? "Данните не се заредиха." : "The data didn't load."));
         return body as T;
       })
       .then((data) => {
@@ -89,14 +93,14 @@ export function useJson<T>(url: string | null) {
           key,
           url,
           data: stale,
-          error: navigator.onLine ? e.message : "Нямате връзка с интернет.",
+          error: navigator.onLine ? e.message : lang === "bg" ? "Нямате връзка с интернет." : "You're offline.",
           offline: !!stale,
         });
       });
     return () => {
       alive = false;
     };
-  }, [url, key]);
+  }, [url, key, lang]);
 
   // Only show data for the URL being asked for: never another place's risk while loading.
   const same = !!res && res.url === url;
@@ -108,33 +112,6 @@ export function useJson<T>(url: string | null) {
     retry: () => setNonce((n) => n + 1),
   };
 }
-
-export function timeAgo(iso: string) {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (mins < 60) return `преди ${mins} мин`;
-  const h = Math.round(mins / 60);
-  if (h < 24) return `преди ${h} ч`;
-  return `преди ${Math.round(h / 24)} дни`;
-}
-
-export const weekday = (date: string) =>
-  new Intl.DateTimeFormat("bg-BG", { weekday: "short", timeZone: "UTC" }).format(new Date(date + "T00:00:00Z"));
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-export function timeAgoLong(iso: string) {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (mins < 1) return "току-що";
-  if (mins < 60) return `преди ${plural(mins, "минута", "минути")}`;
-  const h = Math.round(mins / 60);
-  if (h < 24) return `преди ${plural(h, "час", "часа")}`;
-  return `преди ${plural(Math.round(h / 24), "ден", "дни")}`;
-}
-
-export const nf = (n: number, digits = 0) => n.toLocaleString("bg-BG", { maximumFractionDigits: digits });
-
-export const sofiaTime = (iso: string, opts: Intl.DateTimeFormatOptions) =>
-  new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", ...opts });
 
 /** Media query as state, e.g. useMedia("(min-width: 1024px)"). False on the server. */
 export function useMedia(query: string) {
@@ -187,16 +164,14 @@ export function useTheme() {
   return [theme, applyTheme] as const;
 }
 
-/** "в София", but "във Варна" / "във Велико Търново" before в and ф. */
-export const inPlace = (name: string) => `${/^[ВвФф]/.test(name) ? "във" : "в"} ${name}`;
-
 /**
  * One reliable way to ask for the position. Tries a quick, coarse fix first and then a precise one,
  * and turns every failure into a sentence a person can act on (Safari on iPhone is the strict one).
  */
-export async function getPosition(precise = false): Promise<GeolocationPosition> {
-  if (typeof window === "undefined" || !("geolocation" in navigator)) throw new Error("Това устройство не дава местоположение.");
-  if (!window.isSecureContext) throw new Error("Местоположението работи само през защитена връзка (https).");
+export async function getPosition(precise = false, lang: Lang = "bg"): Promise<GeolocationPosition> {
+  const t = <T,>(bg: T, en: T) => (lang === "bg" ? bg : en);
+  if (typeof window === "undefined" || !("geolocation" in navigator)) throw new Error(t("Това устройство не дава местоположение.", "This device can't share its location."));
+  if (!window.isSecureContext) throw new Error(t("Местоположението работи само през защитена връзка (https).", "Location only works over a secure connection (https)."));
   const ask = (high: boolean, timeout: number, maximumAge: number) =>
     new Promise<GeolocationPosition>((res, rej) =>
       navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: high, timeout, maximumAge }),
@@ -209,15 +184,26 @@ export async function getPosition(precise = false): Promise<GeolocationPosition>
       const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
       throw new Error(
         ios
-          ? "Нямаме достъп до местоположението. На iPhone: Настройки → Поверителност и сигурност → Услуги за местоположение → Уебсайтове в Safari → „Докато се ползва“. После презаредете страницата."
-          : "Нямаме достъп до местоположението. Разрешете го за този сайт от иконата до адреса и опитайте пак.",
+          ? t(
+              "Нямаме достъп до местоположението. На iPhone: Настройки → Поверителност и сигурност → Услуги за местоположение → Уебсайтове в Safari → „Докато се ползва“. После презаредете страницата.",
+              "We can't see your location. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then reload the page.",
+            )
+          : t(
+              "Нямаме достъп до местоположението. Разрешете го за този сайт от иконата до адреса и опитайте пак.",
+              "We can't see your location. Allow it for this site from the icon next to the address and try again.",
+            ),
       );
     }
     // Timed out or no fix yet: one more try with the other accuracy and more time.
     try {
       return await ask(!precise, 20000, 600000);
     } catch {
-      throw new Error("Телефонът не намери местоположение. Излезте на открито или включете услугите за местоположение и опитайте пак.");
+      throw new Error(
+        t(
+          "Телефонът не намери местоположение. Излезте на открито или включете услугите за местоположение и опитайте пак.",
+          "Your phone couldn't find its location. Step outside or turn on location services and try again.",
+        ),
+      );
     }
   }
 }

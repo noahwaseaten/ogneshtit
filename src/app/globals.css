@@ -14,6 +14,11 @@
   --accent: #1f5b3e; /* fir */
   --accent-content: #ffffff;
   --ember: #c7361f;
+  /* Satellite fires by heat: weak, medium, strong, very strong. */
+  --heat-1: #e9b52c;
+  --heat-2: #ec7d1b;
+  --heat-3: #d63a17;
+  --heat-4: #8e1a10;
   /* Surfaces are separated by tone, not by shadows. Only things that float (the selected
      segment, sheets) get --lift. */
   --shadow: none;
@@ -48,6 +53,10 @@
     --accent: #7fcf9e;
     --accent-content: #0e1411;
     --ember: #ff7a5c;
+    --heat-1: #f3c44a;
+    --heat-2: #f7913a;
+    --heat-3: #ff5f3a;
+    --heat-4: #ff3d6e;
     --land: #223029;
     --land-line: oklch(1 0 0 / 0.16);
     --shadow: none;
@@ -56,6 +65,10 @@
   }
 }
 :root[data-theme="dark"] {
+  --heat-1: #f3c44a;
+  --heat-2: #f7913a;
+  --heat-3: #ff5f3a;
+  --heat-4: #ff3d6e;
   --surface: #0e1411;
   --card: #18201b;
   --raised: #1f2822;
@@ -121,12 +134,33 @@ p {
   text-wrap: pretty;
 }
 
+/* Hover and press tint, the same everywhere. Drawn as an inset shadow so it sits on top of whatever
+   background the element already has (cards, chips, selected states) and follows its exact radius.
+   Rows inside a grouped card fill edge to edge and the card (overflow-hidden) clips the corners;
+   rows in a sheet use -mx-3 px-3 rounded-xl so the tint is concentric with the sheet's padding. */
+:root {
+  --hover: color-mix(in oklab, var(--content) 8%, transparent);
+  --press: color-mix(in oklab, var(--content) 13%, transparent);
+}
+
 /* Press feedback for anything tappable. */
 .pressable {
   transition: scale 160ms var(--ease-out), background-color 150ms ease, color 150ms ease;
 }
 .pressable:active {
   scale: 0.96;
+}
+
+.hover-fill {
+  transition: box-shadow 150ms ease, scale 160ms var(--ease-out), color 150ms ease, background-color 150ms ease;
+}
+@media (hover: hover) {
+  .hover-fill:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 100vmax var(--hover);
+  }
+}
+.hover-fill:active:not(:disabled) {
+  box-shadow: inset 0 0 0 100vmax var(--press);
 }
 
 :focus-visible {
@@ -203,4 +237,63 @@ p {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Satellite fire marks (FireMark.tsx). Transform and opacity only. */
+.fire-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: fire-halo 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes fire-halo {
+  0% {
+    opacity: 0.42;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+.fire-flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  animation: fire-flicker 1.7s ease-in-out infinite;
+}
+@keyframes fire-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  22% {
+    transform: scale(0.96, 1.06) skewX(-3deg);
+  }
+  48% {
+    transform: scale(1.03, 0.96) skewX(1deg);
+  }
+  74% {
+    transform: scale(0.98, 1.04) skewX(3deg);
+  }
+}
+.fire-pop {
+  transform-box: fill-box;
+  transform-origin: 50% 70%;
+  animation: fire-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes fire-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fire-halo,
+  .fire-flicker,
+  .fire-pop {
+    animation: none;
+  }
+  .fire-halo {
+    opacity: 0.18;
+  }
 }

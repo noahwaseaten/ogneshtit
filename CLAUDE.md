@@ -53,14 +53,35 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
   `.pressable` (scale .96 on press), tabular numbers for data, concentric radii, shadows for elevation and borders
   for structure, no `transition: all`, icon swaps via `.swap`, colour never the only signal, contrast ≥ 4.5:1,
   `prefers-reduced-motion` respected.
+- Hover and press: always the `hover-fill` class (globals.css), never ad-hoc `hover:bg-*`. Rows in a grouped card are
+  edge to edge (`px-4`, no radius) and the card has `overflow-hidden`; rows in a sheet use `-mx-3 px-3 rounded-xl`.
+- Satellite fires are drawn by `FireMark.tsx` everywhere: a flame for the last 24 h (an ember dot when older), flame size
+  and colour by heat (FRP: `--heat-1..4`, `HEAT` in FiresNear), a breathing glow under 6 h, flicker for strong fires;
+  groups are a pill with the count. Animations are transform/opacity only and stop with reduced motion. Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
+
+## Languages (Bulgarian and English)
+
+- Every page lives under `src/app/[lang]/` (`bg`, `en`), prerendered for both. `src/proxy.ts` rewrites the short
+  URLs (`/karta`) to a language: `?l=` param, then the `lang` cookie (set in Settings), then the country
+  (`cf-ipcountry` / `x-vercel-ip-country`: Bulgaria → `bg`, anywhere else → `en`, no header → `bg`).
+  `usePathname()` returns the rewritten path, so strip `/bg|/en` before comparing (see `usePath` in Shell).
+- Text sits next to the code as a pair: `t("Български", "English")` from `useI18n()` (client) or `pick(lang)`
+  (server; get `lang` with `langFrom(params)`). `useI18n()` also gives `nf`, `time`, `weekday`, `ago`, `agoLong`,
+  `inPlace` for the current locale. API routes use `textFor(req)` for error messages.
+- Place names come from data in Bulgarian; show them with `placeName(name, lang)`; ИАГ labels with `iagLabel`.
+  Danger levels: `dangerText(d, lang)`. Weather warnings carry an `en` copy from MeteoAlarm.
+- In English the app is called **Fire Shield**, areas are in hectares, and the author is Noah (Kamen in Bulgarian).
+- Reports to the forest directorates are always composed in Bulgarian, whatever the UI language.
+- Shared links carry `l=<lang>`, and Discord/OG images use `/{lang}/...` paths, because crawlers are not in Bulgaria.
+- Push subscriptions store `lang`; the cron sends alerts in that language.
 
 ## Copy rules (user-facing text)
 
-- Plain, friendly Bulgarian for people with no technical background. Explain every term (FWI, ФПЧ2,5, върхов пожар).
+- Plain, friendly Bulgarian and English for people with no technical background. Explain every term (FWI, ФПЧ2,5, върхов пожар).
 - **No em dashes (—) or en dashes (–) anywhere in the UI.** Use a full stop, comma, colon or "до".
 - No filler, hype or "AI voice" (the avoid-ai-writing skill): no "ключов", "цялостен", rule-of-three lists,
   significance inflation or invented numbers. Every figure must come from a cited source.
-- Use "във" before в/ф (`inPlace()` in `src/lib/client.ts`). Numbers via `nf()` (bg-BG locale).
+- Use "във" before в/ф (`inPlace()` from `useI18n()`). Numbers via `nf()` from `useI18n()`.
 
 ## Data sources and where they are handled
 
@@ -73,6 +94,7 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
 | Truck tickets | ИАГ `GET /e_tickets/search?session=000&user_id=1&search_by=2|3&search_text=<digits>&lng=bg` and `/e_tickets/get?...&type=&ticket_id=&digest=xxxn` (JSON) | `iag.ts`, `/api/ticket`, `/api/ticket/[type]/[id]` |
 | Regional directorates | ИАГ pages `/struct/lang/1/type/R/id/{2..17}/unit_single`, scraped weekly (office phone, e-mail; the "дежурен телефон" on some pages is for forestry operators, not the public) | `iag.ts`, `src/data/rdg.ts`, `/api/rdg` |
 | Weather warnings | MeteoAlarm feed `feeds-bulgaria` (НИМХ) | `src/lib/warnings.ts`, `/api/warnings` |
+| Source status (Settings) | The same cached helpers, checked together | `/api/status`, `SettingsView.tsx` |
 | Place search | Open-Meteo geocoding, called from the browser | `LocationPicker.tsx` |
 | Oblast shapes | Natural Earth admin-1 → `scripts/oblasts.mjs` → `src/data/oblasts.ts` (do not edit by hand) | `BulgariaMap.tsx`, `src/lib/oblast.ts` |
 
@@ -88,8 +110,10 @@ Notes:
 ## Layout of the repo
 
 ```
-src/app/            pages: / (Днес), /pozhari, /pomogni, /za; api/* route handlers; manifest, icons, OG image
-src/components/     UI (Today, RiskCard, Conditions, FiresNear, FireStats, TruckCheck, ReportForm, BulgariaMap, Sheet, Shell…)
+src/app/[lang]/     pages: / (Днес), /karta, /pozhari, /pomogni, /nastroiki (Settings); manifest, OG images
+src/app/api/        route handlers
+src/i18n/           languages: lang.ts, format.ts, client.tsx, server.ts, names.ts; src/proxy.ts picks the language
+src/components/     UI (Today, RiskCard, Conditions, FiresNear, FireStats, TruckCheck, ReportForm, BulgariaMap, Sheet, Shell, Settings…)
 src/lib/            data + helpers (fwi, risk, fires, iag, warnings, danger, oblast, geo, client)
 src/data/           static data (oblasts.ts generated, places.ts, rdg.ts, bulgaria.json border)
 scripts/            generators and the FWI test

@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { Share, SquarePlus, MoreVertical, MoreHorizontal, Menu, MonitorDown } from "lucide-react";
 import { InstallButton, useInstall } from "./Install";
+import { useI18n } from "@/i18n/client";
 
 type Platform = "ios" | "android" | "desktop";
 type Browser = "safari" | "chrome" | "samsung" | "firefox" | "edge" | "other";
@@ -50,6 +51,7 @@ function Steps({ items }: { items: React.ReactNode[] }) {
 export function InstallHelp() {
   const { standalone, canPrompt } = useInstall();
   const device = useSyncExternalStore(noop, detect, () => null);
+  const { t } = useI18n();
   if (standalone || !device) return null;
   const tab = device.platform;
   const browser = device.browser;
@@ -59,59 +61,101 @@ export function InstallHelp() {
       <>
         <Steps
           items={[
-            browser && browser !== "safari" ? (
+            browser && browser !== "safari"
+              ? t(
+                  <>
+                    Натиснете <Share className={icon} strokeWidth={2} aria-label="Сподели" /> до адреса горе.
+                  </>,
+                  <>
+                    Tap <Share className={icon} strokeWidth={2} aria-label="Share" /> next to the address at the top.
+                  </>,
+                )
+              : t(
+                  <>
+                    Натиснете <MoreHorizontal className={icon} strokeWidth={2} aria-label="Още" /> долу вдясно, после{" "}
+                    <Share className={icon} strokeWidth={2} aria-hidden /> „Сподели“. На по-стар iPhone бутонът{" "}
+                    <Share className={icon} strokeWidth={2} aria-hidden /> е направо в долната лента.
+                  </>,
+                  <>
+                    Tap <MoreHorizontal className={icon} strokeWidth={2} aria-label="More" /> at the bottom right, then{" "}
+                    <Share className={icon} strokeWidth={2} aria-hidden /> Share. On an older iPhone the{" "}
+                    <Share className={icon} strokeWidth={2} aria-hidden /> button is right in the bottom bar.
+                  </>,
+                ),
+            t(
               <>
-                Натиснете <Share className={icon} strokeWidth={2} aria-label="Сподели" /> до адреса горе.
-              </>
-            ) : (
+                Превъртете надолу и изберете <SquarePlus className={icon} strokeWidth={2} aria-hidden /> „Добави към начален екран“.
+              </>,
               <>
-                Натиснете <MoreHorizontal className={icon} strokeWidth={2} aria-label="Още" /> долу вдясно, после{" "}
-                <Share className={icon} strokeWidth={2} aria-hidden /> „Сподели“. На по-стар iPhone бутонът{" "}
-                <Share className={icon} strokeWidth={2} aria-hidden /> е направо в долната лента.
-              </>
+                Scroll down and choose <SquarePlus className={icon} strokeWidth={2} aria-hidden /> Add to Home Screen.
+              </>,
             ),
-            <>
-              Превъртете надолу и изберете <SquarePlus className={icon} strokeWidth={2} aria-hidden /> „Добави към начален екран“.
-            </>,
-            <>Оставете „Отвори като уеб приложение“ включено и натиснете „Добави“.</>,
+            t(<>Оставете „Отвори като уеб приложение“ включено и натиснете „Добави“.</>, <>Leave Open as Web App on and tap Add.</>),
           ]}
         />
-        <p className="pt-3 text-[14px] leading-snug text-muted">На iPhone известията работят само след като ОгнеЩит е добавен на началния екран.</p>
+        <p className="pt-3 text-[14px] leading-snug text-muted">
+          {t(
+            "На iPhone известията работят само след като ОгнеЩит е добавен на началния екран.",
+            "On iPhone, alerts only work once Fire Shield is on your Home Screen.",
+          )}
+        </p>
       </>
     ),
     android:
       browser === "samsung" ? (
         <Steps
           items={[
-            <>
-              Натиснете <Menu className={icon} strokeWidth={2} aria-label="Меню" /> долу вдясно.
-            </>,
-            <>Изберете „Добавяне на страница към“, после „Начален екран“.</>,
+            t(
+              <>
+                Натиснете <Menu className={icon} strokeWidth={2} aria-label="Меню" /> долу вдясно.
+              </>,
+              <>
+                Tap <Menu className={icon} strokeWidth={2} aria-label="Menu" /> at the bottom right.
+              </>,
+            ),
+            t(<>Изберете „Добавяне на страница към“, после „Начален екран“.</>, <>Choose Add page to, then Home screen.</>),
           ]}
         />
       ) : (
         <Steps
           items={[
-            <>
-              В Chrome натиснете <MoreVertical className={icon} strokeWidth={2} aria-label="Меню" /> горе вдясно.
-            </>,
-            <>Изберете „Инсталиране на приложението“ или „Добавяне към началния екран“.</>,
-            <>Потвърдете с „Инсталиране“.</>,
+            t(
+              <>
+                В Chrome натиснете <MoreVertical className={icon} strokeWidth={2} aria-label="Меню" /> горе вдясно.
+              </>,
+              <>
+                In Chrome, tap <MoreVertical className={icon} strokeWidth={2} aria-label="Menu" /> at the top right.
+              </>,
+            ),
+            t(<>Изберете „Инсталиране на приложението“ или „Добавяне към началния екран“.</>, <>Choose Install app or Add to Home screen.</>),
+            t(<>Потвърдете с „Инсталиране“.</>, <>Confirm with Install.</>),
           ]}
         />
       ),
     desktop:
       browser === "safari" ? (
-        <Steps items={[<>В Safari отворете менюто „Файл“.</>, <>Изберете „Добави в Dock“.</>]} />
+        <Steps
+          items={[t(<>В Safari отворете менюто „Файл“.</>, <>In Safari, open the File menu.</>), t(<>Изберете „Добави в Dock“.</>, <>Choose Add to Dock.</>)]}
+        />
       ) : browser === "firefox" ? (
-        <p className="text-[16px] leading-snug">Firefox на компютър не инсталира уеб приложения. Отворете сайта в Chrome, Edge или Safari.</p>
+        <p className="text-[16px] leading-snug">
+          {t(
+            "Firefox на компютър не инсталира уеб приложения. Отворете сайта в Chrome, Edge или Safari.",
+            "Firefox on a computer can't install web apps. Open the site in Chrome, Edge or Safari.",
+          )}
+        </p>
       ) : (
         <Steps
           items={[
-            <>
-              В Chrome или Edge натиснете <MonitorDown className={icon} strokeWidth={2} aria-label="Инсталиране" /> в края на адресната лента.
-            </>,
-            <>Потвърдете с „Инсталиране“.</>,
+            t(
+              <>
+                В Chrome или Edge натиснете <MonitorDown className={icon} strokeWidth={2} aria-label="Инсталиране" /> в края на адресната лента.
+              </>,
+              <>
+                In Chrome or Edge, click <MonitorDown className={icon} strokeWidth={2} aria-label="Install" /> at the end of the address bar.
+              </>,
+            ),
+            t(<>Потвърдете с „Инсталиране“.</>, <>Confirm with Install.</>),
           ]}
         />
       ),
@@ -120,14 +164,16 @@ export function InstallHelp() {
   return (
     <section id="install" aria-labelledby="install-title" className="scroll-mt-20">
       <h2 id="install-title" className="px-1 text-[17px] font-semibold">
-        Сложете го на началния екран
+        {t("Сложете го на началния екран", "Add it to your home screen")}
       </h2>
-      <p className="px-1 pt-1 text-[15px] leading-snug text-muted">Отваря се на цял екран и показва последните данни и без интернет.</p>
+      <p className="px-1 pt-1 text-[15px] leading-snug text-muted">
+        {t("Отваря се на цял екран и показва последните данни и без интернет.", "It opens full screen and shows the latest data even offline.")}
+      </p>
       <div className="mt-3 rounded-[20px] bg-card p-4">
         {canPrompt && (
           <div className="pb-4">
             <InstallButton />
-            <p className="pt-3 text-[14px] text-muted">Или ръчно:</p>
+            <p className="pt-3 text-[14px] text-muted">{t("Или ръчно:", "Or by hand:")}</p>
           </div>
         )}
         {content[tab]}

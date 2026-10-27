@@ -4,6 +4,8 @@
 // Rules we keep to: one Container at the root, at most 40 components, at most 3000 bytes of JSON,
 // absolute https URLs, link buttons only, labels up to 80 characters.
 
+import { APP_NAME, pick, type Lang } from "@/i18n/lang";
+
 export const SITE = "https://ogneshtit.noahwaseaten.com";
 
 type Text = { type: 10; content: string };
@@ -50,14 +52,16 @@ export function DiscordCard({ accent = "#1f5b3e", components }: { accent?: strin
   );
 }
 
-/** The card for an ordinary page: name, one line on what it does, the site image and two links. */
-export function PageCard({ title, body, path }: { title: string; body: string; path: string }) {
+/** The card for an ordinary page: name, one line on what it does, the site image and two links.
+ *  Images point at the language's own path, since Discord's crawler is not in Bulgaria. */
+export function PageCard({ lang, title, body, path }: { lang: Lang; title: string; body: string; path: string }) {
+  const t = pick(lang);
   return (
     <DiscordCard
       components={[
-        text(`-# ОгнеЩит\n## ${title}\n${body}`),
-        image("/opengraph-image"),
-        buttons(["Отвори", path], ["Опасност днес", "/"]),
+        text(`-# ${APP_NAME[lang]}\n## ${title}\n${body}`),
+        image(`/${lang}/opengraph-image`),
+        buttons([t("Отвори", "Open"), path], [t("Опасност днес", "Danger today"), "/"]),
       ]}
     />
   );

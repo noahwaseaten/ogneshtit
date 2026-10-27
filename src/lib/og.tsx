@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { DANGERS, type Danger } from "@/lib/danger";
+import { DANGERS, dangerText, type Danger } from "@/lib/danger";
+import { APP_NAME, localeOf, pick, type Lang } from "@/i18n/lang";
+import { placeName } from "@/i18n/names";
 
 /** Onest (Latin + Cyrillic) for generated images. Satori needs woff/ttf, so the files live in /assets/fonts. */
 export async function ogFonts() {
@@ -45,11 +47,14 @@ export const SHIELD_SMALL = (
 );
 
 /** Share image for a place: one message set large, today's level, on the six-step scale used on the site. */
-export function shareImage(name: string, d: Danger, fonts: Awaited<ReturnType<typeof ogFonts>>) {
+export function shareImage(name: string, d: Danger, fonts: Awaited<ReturnType<typeof ogFonts>>, lang: Lang = "bg") {
+  const t = pick(lang);
   const bg = DANGER_HEX[d.key];
   const fg = d.onColor;
-  const date = new Intl.DateTimeFormat("bg-BG", { day: "numeric", month: "long", timeZone: "Europe/Sofia" }).format(new Date());
-  const big = d.label.length > 8 ? 124 : 168;
+  const label = dangerText(d, lang).label;
+  const place = placeName(name, lang);
+  const date = new Intl.DateTimeFormat(localeOf(lang), { day: "numeric", month: "long", timeZone: "Europe/Sofia" }).format(new Date());
+  const big = label.length > 8 ? 124 : 168;
 
   return new ImageResponse(
     (
@@ -57,13 +62,13 @@ export function shareImage(name: string, d: Danger, fonts: Awaited<ReturnType<ty
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ display: "flex", background: "#1f5b3e", borderRadius: 14, padding: 5 }}>{SHIELD_SMALL}</div>
-            <div style={{ fontSize: 30, fontWeight: 700 }}>ОгнеЩит</div>
+            <div style={{ fontSize: 30, fontWeight: 700 }}>{APP_NAME[lang]}</div>
           </div>
           <div style={{ fontSize: 28, fontWeight: 500, opacity: 0.8 }}>{date}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 38, fontWeight: 500, opacity: 0.88 }}>{`Опасност от пожар днес, ${name}`}</div>
-          <div style={{ fontSize: big, fontWeight: 700, lineHeight: 1, letterSpacing: -big * 0.035, marginTop: 6 }}>{d.label}</div>
+          <div style={{ fontSize: 38, fontWeight: 500, opacity: 0.88 }}>{t(`Опасност от пожар днес, ${place}`, `Fire danger today, ${place}`)}</div>
+          <div style={{ fontSize: big, fontWeight: 700, lineHeight: 1, letterSpacing: -big * 0.035, marginTop: 6 }}>{label}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", gap: 12 }}>
@@ -74,7 +79,7 @@ export function shareImage(name: string, d: Danger, fonts: Awaited<ReturnType<ty
               />
             ))}
           </div>
-          <div style={{ fontSize: 32, fontWeight: 700 }}>{`Ниво ${d.index + 1} от ${DANGERS.length}`}</div>
+          <div style={{ fontSize: 32, fontWeight: 700 }}>{t(`Ниво ${d.index + 1} от ${DANGERS.length}`, `Level ${d.index + 1} of ${DANGERS.length}`)}</div>
         </div>
       </div>
     ),

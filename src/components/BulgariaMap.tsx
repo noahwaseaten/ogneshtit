@@ -4,6 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { Minus, Plus, Maximize, LocateFixed } from "lucide-react";
 import { MAP_H, MAP_W, OBLASTS, UNITS_PER_KM, project } from "@/data/oblasts";
 import { PLACES } from "@/data/places";
+import { useI18n } from "@/i18n/client";
+import { placeName } from "@/i18n/names";
+import { MapFire, MapFireGroup, type FireAge } from "./FireMark";
 
 // A plain SVG map of Bulgaria's 28 oblasts. No tiles and no map library: it draws instantly and
 // works offline. With `zoomable` it pans and zooms by drag, pinch, wheel, double tap and buttons.
@@ -11,7 +14,17 @@ import { PLACES } from "@/data/places";
 // Performance: during a gesture the viewBox is written straight to the DOM (no React render);
 // React only re-renders when the gesture ends, which is when markers are re-clustered.
 
-export type MapPoint = { id: string; lat: number; lon: number; label: string };
+/**
+ * A point on the map. Fires also carry `tier` (heat step 0..3) and `age`, and are drawn with FireMark.
+ * `rank` decides which fire leads a group (lowest wins).
+ */
+export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number; tier?: number; age?: FireAge };
+/** Floating map control surface. */
+const ctl = "bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] transition-colors duration-150";
+
+const lead = (pts: MapPoint[]) => [...pts].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))[0];
+const pointColor = (pts: MapPoint[]) => lead(pts)?.color ?? "var(--ember)";
+const groupAge = (pts: MapPoint[]): FireAge => (pts.some((p) => p.age === "fresh") ? "fresh" : pts.every((p) => p.age === "old") ? "old" : "day");
 
 const MAJOR = new Set(["София", "Пловдив", "Варна", "Бургас", "Русе", "Плевен", "Стара Загора", "Благоевград"]);
 const MAX_ZOOM = 40;
@@ -62,6 +75,7 @@ export function BulgariaMap({
   /** Size the box with CSS (e.g. an aspect ratio); the map fits inside it. */
   className?: string;
 }) {
+  const { t, lang } = useI18n();
   const box = useRef<HTMLDivElement>(null);
   const svg = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: 600, h: 600 * (MAP_H / MAP_W) });
@@ -364,7 +378,7 @@ export function BulgariaMap({
   // Greedy distance clustering in screen space: a fire joins a group when it would touch it on
   // screen, so two markers can never overlap (grid cells let neighbours sit on top of each other).
   const clusters = useMemo(() => {
-    const reach = 26 * upp;
+    const reach = 34 * upp; // a group pill is about 38 × 24 px
     const groups: { x: number; y: number; pts: MapPoint[]; xs: number[]; ys: number[] }[] = [];
     for (const { p, xy } of projected) {
       const near = groups.find((c) => Math.hypot(c.x - xy[0], c.y - xy[1]) < reach);
@@ -412,8 +426,8 @@ export function BulgariaMap({
   };
 
   const towns = useMemo(
-    () => PLACES.filter((p) => zoom >= 2.2 || MAJOR.has(p.name)).map((p) => ({ name: p.name, xy: project(p.lat, p.lon) })),
-    [zoom],
+    () => PLACES.filter((p) => zoom >= 2.2 || MAJOR.has(p.name)).map((p) => ({ name: placeName(p.name, lang), xy: project(p.lat, p.lon) })),
+    [zoom, lang],
   );
 
   const meXY = me ? project(me.lat, me.lon) : null;
@@ -512,7 +526,7 @@ export function BulgariaMap({
 
         {/* Handlers below read refs only when tapped, never while rendering. */}
         {/* eslint-disable-next-line react-hooks/refs */}
-        {clusters.map((c) => {
+        {clusters.map((c, ci) => {
           const n = c.pts.length;
           // At the closest zoom a group that still overlaps fans out so each fire can be tapped.
           if (n > 1 && zoomable && zoom >= MAX_ZOOM * 0.95) {
@@ -527,30 +541,29 @@ export function BulgariaMap({
                     <g key={p.id} role="button" tabIndex={0} aria-label={p.label} className="cursor-pointer outline-none" onClick={() => tap(() => onPoints?.([p]))} onKeyDown={onKey(() => onPoints?.([p]))}>
                       <line x1={c.x} y1={c.y} x2={x} y2={y} stroke="var(--muted)" strokeWidth={1 * upp} />
                       <circle cx={x} cy={y} r={14 * upp} fill="transparent" />
-                      <circle cx={x} cy={y} r={5.5 * upp} fill="var(--ember)" stroke="var(--card)" strokeWidth={1.5 * upp} />
+                      <MapFire x={x} y={y} upp={upp} tier={p.tier ?? 1} age={p.age ?? "day"} color={p.color ?? "var(--ember)"} seed={i} />
                     </g>
                   );
                 })}
               </g>
             );
           }
-          const rad = (n > 1 ? 10 + Math.min(5, Math.log2(n) * 1.6) : 5.5) * upp;
+          const first = c.pts[0];
           return (
             <g
               key={c.pts[0].id}
               role="button"
               tabIndex={0}
-              aria-label={n === 1 ? c.pts[0].label : `${n} огнища едно до друго`}
+              aria-label={n === 1 ? c.pts[0].label : t(`${n} огнища едно до друго`, `${n} fires close together`)}
               className="cursor-pointer outline-none"
               onClick={() => tap(() => openCluster(c))}
               onKeyDown={onKey(() => openCluster(c))}
             >
               <circle cx={c.x} cy={c.y} r={22 * upp} fill="transparent" />
-              <circle cx={c.x} cy={c.y} r={rad} fill="var(--ember)" stroke="var(--card)" strokeWidth={1.5 * upp} pointerEvents="none" />
-              {n > 1 && (
-                <text x={c.x} y={c.y} dy="0.35em" textAnchor="middle" fontSize={fontPx} fontWeight={600} fill="#fff" pointerEvents="none" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {n}
-                </text>
+              {n === 1 ? (
+                <MapFire x={c.x} y={c.y} upp={upp} tier={first.tier ?? 1} age={first.age ?? "day"} color={first.color ?? "var(--ember)"} seed={ci} />
+              ) : (
+                <MapFireGroup x={c.x} y={c.y} upp={upp} n={n} age={groupAge(c.pts)} color={pointColor(c.pts)} fontPx={fontPx} />
               )}
             </g>
           );
@@ -558,35 +571,46 @@ export function BulgariaMap({
       </svg>
 
       {zoomable && (
-        <div className="absolute bottom-3 right-3 flex flex-col items-end gap-2" onPointerDown={(e) => e.stopPropagation()}>
+        <>
+          {/* Back to all of Bulgaria: top right, away from the zoom and location buttons, as in map apps. */}
           {zoom > 1.05 && (
             <button
               onClick={() => animateTo(fullVB(r))}
-              aria-label="Цяла България"
-              className="pressable grid size-11 place-items-center rounded-full bg-card text-content shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label={t("Цяла България", "All of Bulgaria")}
+              className={`${ctl} pressable absolute right-3 top-3 grid size-11 place-items-center rounded-full text-content hover:bg-[color-mix(in_oklab,var(--card),var(--content)_8%)]`}
             >
               <Maximize size={18} strokeWidth={2} aria-hidden />
             </button>
           )}
-          {/* Phones zoom with fingers, as in map apps; buttons only where there is a mouse. */}
-          <div className="hidden flex-col overflow-hidden rounded-xl bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] [@media(pointer:fine)]:flex">
-            <button onClick={() => animateTo(zoomBy(2))} disabled={zoom >= MAX_ZOOM} aria-label="Приближи" className="grid size-10 place-items-center hover:bg-line/60 disabled:opacity-35">
-              <Plus size={18} strokeWidth={2} aria-hidden />
-            </button>
-            <button onClick={() => animateTo(zoomBy(0.5))} disabled={zoom <= 1.01} aria-label="Отдалечи" className="grid size-10 place-items-center border-t border-line hover:bg-line/60 disabled:opacity-35">
-              <Minus size={18} strokeWidth={2} aria-hidden />
-            </button>
+          {/* One column, one width: zoom (only where there is a mouse; phones pinch) above "my location". */}
+          <div className="absolute bottom-3 right-3 flex w-11 flex-col gap-2" onPointerDown={(e) => e.stopPropagation()}>
+            <div className={`${ctl} hidden flex-col overflow-hidden rounded-full text-content [@media(pointer:fine)]:flex`}>
+              <button
+                onClick={() => animateTo(zoomBy(2))}
+                disabled={zoom >= MAX_ZOOM}
+                aria-label={t("Приближи", "Zoom in")}
+                className="hover-fill grid h-11 place-items-center disabled:opacity-35"
+              >
+                <Plus size={18} strokeWidth={2} aria-hidden />
+              </button>
+              <span className="mx-2.5 h-px bg-line" aria-hidden />
+              <button
+                onClick={() => animateTo(zoomBy(0.5))}
+                disabled={zoom <= 1.01}
+                aria-label={t("Отдалечи", "Zoom out")}
+                className="hover-fill grid h-11 place-items-center disabled:opacity-35"
+              >
+                <Minus size={18} strokeWidth={2} aria-hidden />
+              </button>
+            </div>
+            {me && (
+              <button onClick={locate} aria-label={t("Покажи моето място", "Show my location")} className={`${ctl} pressable grid size-11 place-items-center rounded-full text-[#1f6fd1] hover:bg-[color-mix(in_oklab,var(--card),var(--content)_8%)]`}>
+                <LocateFixed size={20} strokeWidth={2} aria-hidden />
+              </button>
+            )}
           </div>
-          {me && (
-            <button
-              onClick={locate}
-              aria-label="Покажи моето място"
-              className="pressable grid size-12 place-items-center rounded-full bg-card text-[#1f6fd1] shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
-            >
-              <LocateFixed size={22} strokeWidth={2} aria-hidden />
-            </button>
-          )}
-        </div>
+        </>
       )}
     </div>
   );

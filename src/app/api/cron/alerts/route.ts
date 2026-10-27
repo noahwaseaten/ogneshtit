@@ -1,9 +1,11 @@
+import { pick } from "@/i18n/lang";
+import { placeName } from "@/i18n/names";
 import { connection } from "next/server";
 import { allSubs, deleteSub, push, saveSub, type Sub } from "@/lib/alerts";
 import { getRisk } from "@/lib/risk";
 import { getFires } from "@/lib/fires";
 import { getWarnings, type Warning } from "@/lib/warnings";
-import { dangerByKey } from "@/lib/danger";
+import { dangerByKey, dangerText } from "@/lib/danger";
 import { distanceKm } from "@/lib/geo";
 
 // Called every 30 minutes (GitHub Actions) and once a day as a fallback (Vercel Cron).
@@ -36,14 +38,17 @@ export async function GET(req: Request) {
   for (const s of subs) {
     const msgs: Msg[] = [];
     const next: Sub["sent"] = { ...s.sent };
-    const label = s.place.label || "избраното място";
+    const lang = s.lang ?? "bg";
+    const t = pick(lang);
+    const label = s.place.label ? placeName(s.place.label, lang) : t("избраното място", "your place");
 
     if (s.prefs.danger !== "off") {
       const risk = await getRisk(s.place.lat, s.place.lon).catch(() => null);
       const d = risk && dangerByKey(risk.today.danger);
       const min = s.prefs.danger === "veryhigh" ? 3 : 2;
       if (risk && d && d.index >= min && s.sent.danger !== risk.today.date) {
-        msgs.push({ title: `${d.label} опасност от пожар днес`, body: `${label}. ${d.advice}`, url: "/", tag: "danger" });
+        const dt = dangerText(d, lang);
+        msgs.push({ title: t(`${dt.label} опасност от пожар днес`, `${dt.label} fire danger today`), body: `${label}. ${dt.advice}`, url: "/", tag: "danger" });
         next.danger = risk.today.date;
       }
     }
@@ -55,8 +60,14 @@ export async function GET(req: Request) {
       if (fresh.length) {
         const km = Math.round(Math.min(...fresh.map((h) => distanceKm(s.place.lat, s.place.lon, h.lat, h.lon))));
         msgs.push({
-          title: fresh.length === 1 ? `Огън на ${km} км от ${label}` : `${fresh.length} огнища до ${s.prefs.firesKm} км от ${label}`,
-          body: "Засечено от спътник. Може да е горски пожар или горящо стърнище. Вижте на картата.",
+          title:
+            fresh.length === 1
+              ? t(`Огън на ${km} км от ${label}`, `Fire ${km} km from ${label}`)
+              : t(`${fresh.length} огнища до ${s.prefs.firesKm} км от ${label}`, `${fresh.length} fires within ${s.prefs.firesKm} km of ${label}`),
+          body: t(
+            "Засечено от спътник. Може да е горски пожар или горящо стърнище. Вижте на картата.",
+            "Spotted by satellite. It could be a forest fire or burning stubble. See it on the map.",
+          ),
           url: "/karta",
           tag: "fires",
         });
@@ -70,7 +81,13 @@ export async function GET(req: Request) {
       for (const w of mine) {
         const key = `${w.type}|${w.onset}`;
         if (seen.has(key)) continue;
-        msgs.push({ title: `${w.level === 4 ? "Червен" : "Оранжев"} код: ${w.event || w.headline}`, body: w.description.slice(0, 160) || label, url: "/", tag: `warn-${key}` });
+        const text = lang === "en" && w.en ? w.en : w;
+        msgs.push({
+          title: `${w.level === 4 ? t("Червен код", "Red warning") : t("Оранжев код", "Orange warning")}: ${text.event || text.headline}`,
+          body: text.description.slice(0, 160) || label,
+          url: "/",
+          tag: `warn-${key}`,
+        });
         seen.add(key);
       }
       next.warnings = [...seen].slice(-50);

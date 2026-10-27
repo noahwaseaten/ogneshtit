@@ -36,12 +36,15 @@ export function oblastAt(lat: number, lon: number) {
   return null;
 }
 
-const BEARINGS = ["север", "североизток", "изток", "югоизток", "юг", "югозапад", "запад", "северозапад"];
-/** Compass direction from a to b as a word: "северозапад". */
-export function bearingWord(aLat: number, aLon: number, bLat: number, bLon: number) {
+const BEARINGS = {
+  bg: ["север", "североизток", "изток", "югоизток", "юг", "югозапад", "запад", "северозапад"],
+  en: ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"],
+};
+/** Compass direction from a to b as a word: "северозапад" / "northwest". */
+export function bearingWord(aLat: number, aLon: number, bLat: number, bLon: number, lang: "bg" | "en" = "bg") {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const y = Math.sin(toRad(bLon - aLon)) * Math.cos(toRad(bLat));
   const x = Math.cos(toRad(aLat)) * Math.sin(toRad(bLat)) - Math.sin(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.cos(toRad(bLon - aLon));
   const deg = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-  return BEARINGS[Math.round(deg / 45) % 8];
+  return BEARINGS[lang][Math.round(deg / 45) % 8];
 }

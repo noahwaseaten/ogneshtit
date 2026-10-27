@@ -2,9 +2,11 @@ import type { NextRequest } from "next/server";
 import { getRisk } from "@/lib/risk";
 import { dangerByKey } from "@/lib/danger";
 import { ogFonts, shareImage } from "@/lib/og";
+import { langFrom } from "@/i18n/lang";
 
 // Share card: today's fire danger for a place.
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, ctx: RouteContext<"/[lang]/s/og">) {
+  const lang = await langFrom(ctx.params);
   const p = req.nextUrl.searchParams;
   const lat = Number(p.get("lat"));
   const lon = Number(p.get("lon"));
@@ -16,8 +18,8 @@ export async function GET(req: NextRequest) {
     risk = await getRisk(r(lat), r(lon));
   } catch {
     // Weather service down: fall back to the general card rather than a broken image.
-    return Response.redirect(new URL("/opengraph-image", req.nextUrl), 302);
+    return Response.redirect(new URL(`/${lang}/opengraph-image`, req.nextUrl), 302);
   }
   const d = dangerByKey(risk.today.danger);
-  return shareImage(name, d, await ogFonts());
+  return shareImage(name, d, await ogFonts(), lang);
 }

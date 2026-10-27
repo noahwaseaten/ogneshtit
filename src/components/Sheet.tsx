@@ -3,6 +3,7 @@
 import { Drawer } from "vaul";
 import { X } from "lucide-react";
 import { useMedia } from "@/lib/client";
+import { useI18n } from "@/i18n/client";
 
 /**
  * Bottom sheet on phones (with a grabber, swipe to close), side panel on wide screens.
@@ -22,6 +23,7 @@ export function Sheet({
   children: React.ReactNode;
 }) {
   const wide = useMedia("(min-width: 1024px)");
+  const { t } = useI18n();
   return (
     <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()} direction={wide ? "right" : "bottom"}>
       <Drawer.Portal>
@@ -41,8 +43,8 @@ export function Sheet({
               {description && <Drawer.Description className="pt-1 text-[15px] leading-snug text-muted">{description}</Drawer.Description>}
             </div>
             <Drawer.Close
-              className="pressable -mr-2 -mt-1 grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-line"
-              aria-label="Затвори"
+              className="pressable hover-fill -mr-2 -mt-1 grid size-11 shrink-0 place-items-center rounded-full text-muted"
+              aria-label={t("Затвори", "Close")}
             >
               <X size={20} strokeWidth={2} aria-hidden />
             </Drawer.Close>

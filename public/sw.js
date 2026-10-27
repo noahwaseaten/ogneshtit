@@ -1,9 +1,9 @@
 // Offline support: the app shell and the "Помогни" screen (with 112) must open with no signal.
 // Bump VERSION when the list below changes.
 // Pages and API data: network first, cached copy if offline. Static assets: cache first.
-const VERSION = "v3";
+const VERSION = "v4";
 const SHARED = "ogneshtit-shared";
-const SHELL = ["/", "/karta", "/pozhari", "/pomogni", "/pomogni/kamion", "/pomogni/signal", "/za", "/manifest.webmanifest", "/app-icon/192"];
+const SHELL = ["/", "/karta", "/pozhari", "/pomogni", "/pomogni/kamion", "/pomogni/signal", "/nastroiki", "/manifest.webmanifest", "/app-icon/192"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -76,7 +76,7 @@ self.addEventListener("fetch", (e) => {
         caches
           .match(req)
           .then((hit) => hit || (req.mode === "navigate" ? caches.match("/pomogni") : undefined))
-          .then((hit) => hit || new Response("Няма връзка", { status: 503 })),
+          .then((hit) => hit || new Response("Няма връзка / No connection", { status: 503 })),
       ),
   );
 });
