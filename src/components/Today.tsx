@@ -6,8 +6,10 @@ import { oblastAt } from "@/lib/oblast";
 import type { RiskResponse } from "@/lib/risk";
 import { LocationPicker } from "./LocationPicker";
 import { RiskCard, Forecast } from "./RiskCard";
-import { FiresNear } from "./FiresNear";
+import { FiresSummary } from "./FiresNear";
 import { Conditions } from "./Conditions";
+import { Alerts } from "./Alerts";
+import { MyPlaces, SavePlaceButton } from "./MyPlaces";
 
 const today = () =>
   new Intl.DateTimeFormat("bg-BG", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Sofia" }).format(new Date());
@@ -26,14 +28,21 @@ export function Today() {
         <header className="flex flex-col gap-0.5">
           <h1 className="sr-only">ОгнеЩит: опасност от горски пожар днес</h1>
           <p className="min-h-5 px-1 text-[14px] font-medium text-muted first-letter:uppercase">{date}</p>
-          <LocationPicker />
+          <div className="flex items-center justify-between gap-2">
+            <LocationPicker />
+            <SavePlaceButton />
+          </div>
         </header>
         <RiskCard data={risk.data} loading={risk.loading} error={risk.error} offline={risk.offline} onRetry={risk.retry} loc={loc} />
         {risk.data && risk.data.forecast.length > 0 && <Forecast data={risk.data} />}
+        <MyPlaces />
         <Conditions risk={risk.data} oblast={oblast} />
       </div>
       <div className="min-w-0 lg:sticky lg:top-8">
-        <FiresNear loc={loc} />
+        <div className="flex flex-col gap-8">
+          <FiresSummary loc={loc} />
+          <Alerts help />
+        </div>
       </div>
     </div>
   );

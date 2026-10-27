@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, Search, CheckCircle2, AlertTriangle, XCircle, ChevronRight, ExternalLink, MapPin, Phone } from "lucide-react";
+import { Search, CheckCircle2, AlertTriangle, XCircle, ChevronRight, ExternalLink, MapPin, Phone } from "lucide-react";
 import { nf, sofiaTime, timeAgoLong, useJson } from "@/lib/client";
 import type { TicketDetail, TicketSearch, TicketSummary } from "@/lib/iag";
 import { Sheet } from "./Sheet";
@@ -33,9 +33,8 @@ export function TruckCheck() {
   const exact = d ? d.plates.find((p) => p.plate === (chosen ?? d.query)) : undefined;
 
   return (
-    <section aria-labelledby="truck-title" className="rounded-[28px] bg-card p-5 shadow-[var(--shadow)] lg:p-6">
-      <div className="flex items-center gap-3">
-        <Truck size={26} strokeWidth={1.5} aria-hidden />
+    <section aria-labelledby="truck-title" className="rounded-[20px] bg-card p-5 lg:p-6">
+      <div>
         <h2 id="truck-title" className="font-display text-[22px] font-semibold leading-tight">
           Камион с дървесина?
         </h2>

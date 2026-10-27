@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Phone, Navigation, Satellite, ChevronRight, RotateCw } from "lucide-react";
+import { Phone, Navigation, ChevronRight, ArrowRight } from "lucide-react";
 import { useJson, timeAgoLong, sofiaTime, nf, type Loc } from "@/lib/client";
 import { distanceKm } from "@/lib/geo";
 import { bearingWord } from "@/lib/oblast";
@@ -9,23 +10,19 @@ import type { FiresResponse, Hotspot } from "@/lib/fires";
 import { BulgariaMap, type MapPoint } from "./BulgariaMap";
 import { Sheet } from "./Sheet";
 
-const NEAR_KM = 50;
+export const NEAR_KM = 50;
 const CONF = { high: "висока", nominal: "средна", low: "ниска" } as const;
-const strength = (frp: number) => (frp < 5 ? "слаба" : frp < 20 ? "средна" : frp < 80 ? "силна" : "много силна");
+export const strength = (frp: number) => (frp < 5 ? "слаба" : frp < 20 ? "средна" : frp < 80 ? "силна" : "много силна");
+export const firesWord = (n: number) => (n === 1 ? "1 огнище" : `${n} огнища`);
 
-type Spot = Hotspot & { id: string; km: number; dir: string };
+export type Spot = Hotspot & { id: string; km: number; dir: string };
 
-const fires = (n: number) => (n === 1 ? "1 огнище" : `${n} огнища`);
-
-export function FiresNear({ loc }: { loc: Loc }) {
-  const { data, error, loading, offline, retry } = useJson<FiresResponse>("/api/fires");
-  const [picked, setPicked] = useState<Spot[] | null>(null);
-  const [showAll, setShowAll] = useState(false);
-  const who = loc.source === "gps" ? "вас" : loc.label;
-
+/** Satellite hotspots sorted by distance from the chosen place. */
+export function useSpots(loc: Loc) {
+  const res = useJson<FiresResponse>("/api/fires");
   const all = useMemo<Spot[]>(
     () =>
-      (data?.hotspots ?? [])
+      (res.data?.hotspots ?? [])
         .map((h, i) => ({
           ...h,
           id: `${i}:${h.lat},${h.lon},${h.time}`,
@@ -33,144 +30,69 @@ export function FiresNear({ loc }: { loc: Loc }) {
           dir: bearingWord(loc.lat, loc.lon, h.lat, h.lon),
         }))
         .sort((a, b) => a.km - b.km),
-    [data, loc.lat, loc.lon],
+    [res.data, loc.lat, loc.lon],
   );
-  const near = all.filter((h) => h.km <= NEAR_KM);
-  const byId = useMemo(() => new Map(all.map((s) => [s.id, s])), [all]);
   const points = useMemo<MapPoint[]>(
     () => all.map((s) => ({ id: s.id, lat: s.lat, lon: s.lon, label: `Огнище на ${Math.round(s.km)} км на ${s.dir}, ${timeAgoLong(s.time)}` })),
     [all],
   );
-  const list = showAll ? all : all.slice(0, 5);
+  const byId = useMemo(() => new Map(all.map((s) => [s.id, s])), [all]);
+  return { ...res, all, near: all.filter((h) => h.km <= NEAR_KM), points, byId };
+}
 
+/**
+ * Home screen fires: the sentence that matters and a map you can tap without leaving the page.
+ * Pan and zoom live on the Карта tab, where the map can take the whole screen without
+ * fighting the page scroll.
+ */
+export function FiresSummary({ loc }: { loc: Loc }) {
+  const { data, all, near, points, byId, loading } = useSpots(loc);
+  const [picked, setPicked] = useState<Spot[] | null>(null);
+  const who = loc.source === "gps" ? "вас" : loc.label;
   return (
     <section aria-labelledby="fires-title" className="enter">
-      <h2 id="fires-title" className="px-1 font-display text-[20px] font-semibold">
-        Пожари, видени от спътник
-      </h2>
-
-      {data ? (
-        <p className="px-1 pt-1.5 text-[16px] leading-snug">
-          {near.length === 0 ? (
-            <>
-              Няма засечен огън до {NEAR_KM} км от {who} за последните {data.hours} часа.
-            </>
-          ) : (
-            <>
-              <span className="font-semibold text-ember">{fires(near.length)}</span> до {NEAR_KM} км от {who} за последните{" "}
-              {data.hours} часа.
-            </>
-          )}{" "}
-          <span className="text-muted">В цялата страна: {fires(all.length)}.</span>
-        </p>
-      ) : (
-        <p className="px-1 pt-1.5 text-[16px] text-muted">Местата, където спътниците на NASA засичат огън.</p>
-      )}
-
-      <div className="mt-3 overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
-        {!data && loading && <div className="skeleton aspect-[1000/657] w-full" />}
-        {!data && !loading && (
-          <div className="p-5">
-            <p className="text-[15px]">{error}</p>
-            <button
-              onClick={retry}
-              className="pressable mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-4 text-[15px] font-semibold text-accent-content"
-            >
-              <RotateCw size={18} strokeWidth={2} aria-hidden />
-              Опитай пак
-            </button>
-          </div>
-        )}
-        {data && (
+      <div className="flex items-baseline justify-between gap-3 px-1">
+        <h2 id="fires-title" className="font-display text-[20px] font-semibold">
+          Огън наблизо
+        </h2>
+        <Link href="/karta" className="inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-accent">
+          Цяла карта
+          <ArrowRight size={16} strokeWidth={2} aria-hidden />
+        </Link>
+      </div>
+      <p className="px-1 text-[16px] leading-snug">
+        {!data ? (
+          loading ? "Зареждаме…" : "Данните от спътниците не се заредиха."
+        ) : near.length === 0 ? (
+          <>Спътниците не са видели огън до {NEAR_KM} км от {who} за {data.hours} часа.</>
+        ) : (
           <>
-            <div className="p-2 pt-3 lg:p-4">
-              <BulgariaMap
-                ariaLabel={`Карта на България с ${fires(all.length)} от последните ${data.hours} часа`}
-                points={points}
-                onPoints={(pts) => setPicked(pts.map((p) => byId.get(p.id)!).filter(Boolean))}
-                me={{ lat: loc.lat, lon: loc.lon, radiusKm: NEAR_KM }}
-              />
-            </div>
-            <ul className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-line px-4 py-3 text-[13px] text-muted" aria-label="Легенда">
-              <li className="inline-flex items-center gap-2">
-                <span className="size-3 rounded-full border-2 border-white bg-[var(--ember)] shadow-[0_0_0_1px_var(--line)]" aria-hidden />
-                Засечен огън
-              </li>
-              <li className="inline-flex items-center gap-2">
-                <span className="size-3 rounded-full border-2 border-white bg-[#1f6fd1] shadow-[0_0_0_1px_var(--line)]" aria-hidden />
-                {loc.source === "gps" ? "Вие" : loc.label}
-              </li>
-              <li className="inline-flex items-center gap-2">
-                <span className="size-3 rounded-full border-[1.5px] border-dashed border-[#1f6fd1]" aria-hidden />
-                {NEAR_KM} км около {loc.source === "gps" ? "вас" : "мястото"}
-              </li>
-            </ul>
+            <span className="font-semibold text-ember">{firesWord(near.length)}</span> до {NEAR_KM} км от {who} за {data.hours} часа.
           </>
         )}
-      </div>
-
-      {data && all.length > 0 && (
-        <>
-          <h3 className="px-1 pt-5 text-[15px] font-semibold">Най-близо до {who}</h3>
-          <ul className="mt-2 divide-y divide-line overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
-            {list.map((h) => (
-              <li key={h.id}>
-                <button
-                  onClick={() => setPicked([h])}
-                  className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-line/50 active:bg-line"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-[16px] font-medium tabular-nums">
-                      {Math.round(h.km)} км на {h.dir}
-                      {h.km <= NEAR_KM && <span className="text-ember"> · наблизо</span>}
-                    </span>
-                    <span className="block text-[13px] text-muted">
-                      {timeAgoLong(h.time)} · {strength(h.frp)} топлина
-                    </span>
-                  </span>
-                  <ChevronRight size={20} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-          {all.length > 5 && (
-            <button
-              onClick={() => setShowAll((v) => !v)}
-              className="pressable mt-2 min-h-11 px-1 text-[15px] font-medium text-accent"
-              aria-expanded={showAll}
-            >
-              {showAll ? "Покажи по-малко" : `Покажи всички ${all.length}`}
-            </button>
-          )}
-        </>
-      )}
-
-      <p className="flex gap-2 px-1 pt-3 text-[13px] leading-snug text-muted">
-        <Satellite size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" aria-hidden />
-        <span>
-          Спътниците VIIRS на NASA засичат силна топлина няколко пъти на ден. Освен горски пожар това може да е горящо
-          стърнище, сметище или завод, затова точката не е потвърден пожар.
-          {offline && <span className="font-medium text-ember"> Нямате връзка, показваме последните запазени данни.</span>}
-        </span>
       </p>
-
+      <div className="mt-3 overflow-hidden rounded-[20px] bg-card p-2">
+        <BulgariaMap
+          ariaLabel={`Карта с ${firesWord(all.length)} в България`}
+          points={points}
+          onPoints={(pts) => setPicked(pts.map((p) => byId.get(p.id)!).filter(Boolean))}
+          me={{ lat: loc.lat, lon: loc.lon, radiusKm: NEAR_KM }}
+          cities={false}
+        />
+      </div>
       <SpotSheet spots={picked} who={who} onClose={() => setPicked(null)} onPick={(s) => setPicked([s])} />
     </section>
   );
 }
 
-function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | null; who: string; onClose: () => void; onPick: (s: Spot) => void }) {
+export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | null; who: string; onClose: () => void; onPick: (s: Spot) => void }) {
   const one = spots?.length === 1 ? spots[0] : null;
   return (
     <Sheet
       open={!!spots && spots.length > 0}
       onClose={onClose}
-      title={one ? "Засечен огън" : `${spots?.length ?? 0} огнища на едно място`}
-      description={
-        one
-          ? `${Math.round(one.km)} км на ${one.dir} от ${who}, ${timeAgoLong(one.time)}.`
-          : "Спътникът ги е видял близо едно до друго. Изберете едно за подробности."
-      }
+      title={one ? "Засечен огън" : `${spots?.length ?? 0} огнища едно до друго`}
+      description={one ? `${Math.round(one.km)} км на ${one.dir} от ${who}, ${timeAgoLong(one.time)}.` : "Изберете едно за подробности или приближете картата."}
     >
       {one ? (
         <>
@@ -204,12 +126,9 @@ function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | null; who:
               className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-line text-[15px] font-semibold"
             >
               <Navigation size={18} strokeWidth={2} aria-hidden />
-              Виж на карта
+              Google Maps
             </a>
-            <a
-              href="tel:112"
-              className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#c7361f] text-[15px] font-semibold text-white"
-            >
+            <a href="tel:112" className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#c7361f] text-[15px] font-semibold text-white">
               <Phone size={18} strokeWidth={2} aria-hidden />
               Звънни на 112
             </a>
@@ -222,24 +141,32 @@ function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | null; who:
         <ul className="-mx-2 divide-y divide-line">
           {spots?.map((s) => (
             <li key={s.id}>
-              <button
-                onClick={() => onPick(s)}
-                className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-line/50 active:bg-line"
-              >
-                <span>
-                  <span className="block text-[16px] font-medium tabular-nums">
-                    {Math.round(s.km)} км на {s.dir}
-                  </span>
-                  <span className="block text-[13px] text-muted">
-                    {timeAgoLong(s.time)} · {strength(s.frp)} топлина
-                  </span>
-                </span>
-                <ChevronRight size={20} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
-              </button>
+              <SpotRow s={s} onClick={() => onPick(s)} />
             </li>
           ))}
         </ul>
       )}
     </Sheet>
   );
+}
+
+export function SpotRow({ s, onClick }: { s: Spot; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-line/50 active:bg-line">
+      <span className="min-w-0">
+        <span className="block text-[16px] font-medium tabular-nums">
+          {Math.round(s.km)} км на {s.dir}
+          {s.km <= NEAR_KM && <span className="text-ember"> · наблизо</span>}
+        </span>
+        <span className="block text-[13px] text-muted">
+          {timeAgoLong(s.time)} · {strength(s.frp)} топлина
+        </span>
+      </span>
+      <ChevronRight size={20} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
+    </button>
+  );
+}
+
+export function useSpotPicker() {
+  return useState<Spot[] | null>(null);
 }

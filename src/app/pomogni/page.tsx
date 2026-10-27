@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { Phone, Ban } from "lucide-react";
+import Link from "next/link";
+import { Phone, Truck, Axe, ChevronRight } from "lucide-react";
 import { MyCoords } from "@/components/MyCoords";
-import { TruckCheck } from "@/components/TruckCheck";
-import { ReportForm } from "@/components/ReportForm";
+
+const ACTIONS = [
+  { href: "/pomogni/kamion", Icon: Truck, title: "Провери камион с дървесина", text: "Има ли превозен билет от последните 12 часа" },
+  { href: "/pomogni/signal", Icon: Axe, title: "Подай сигнал за незаконна сеч", text: "Със снимки и точни координати, до регионалната дирекция" },
+];
 
 export const metadata: Metadata = {
   title: "Помогни",
@@ -22,9 +26,8 @@ export default function Pomogni() {
       <h1 className="px-1 pt-2 font-display text-[32px] font-bold tracking-[-0.01em] lg:text-[40px]">Какво можете да направите</h1>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <div className="flex flex-col gap-6">
           {/* Emergency first: biggest target, highest contrast. */}
-          <section aria-labelledby="fire-title" className="rounded-[28px] bg-[#8a1a12] p-5 text-white lg:p-6">
+          <section aria-labelledby="fire-title" className="rounded-[24px] bg-[#8a1a12] p-5 text-white lg:row-span-2 lg:p-6">
             <h2 id="fire-title" className="font-display text-[24px] font-semibold">
               Виждате дим или огън?
             </h2>
@@ -47,11 +50,25 @@ export default function Pomogni() {
             </p>
           </section>
 
-          <TruckCheck />
+          <nav aria-label="Други действия" className="overflow-hidden rounded-[20px] bg-card">
+            <ul className="divide-y divide-line">
+              {ACTIONS.map(({ href, Icon, title, text }) => (
+                <li key={href}>
+                  <Link href={href} className="flex min-h-20 items-center gap-4 px-5 py-4 hover:bg-line/40 active:bg-line">
+                    <Icon size={24} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[17px] font-semibold leading-tight">{title}</span>
+                      <span className="block pt-0.5 text-[14px] leading-snug text-muted">{text}</span>
+                    </span>
+                    <ChevronRight size={20} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-          <section aria-labelledby="rules-title" className="rounded-[28px] bg-card p-5 shadow-[var(--shadow)] lg:p-6">
-            <div className="flex items-center gap-3">
-              <Ban size={24} strokeWidth={1.75} aria-hidden />
+          <section aria-labelledby="rules-title" className="rounded-[20px] bg-card p-5 lg:p-6">
+            <div>
               <h2 id="rules-title" className="font-display text-[20px] font-semibold">
                 Какво е забранено
               </h2>
@@ -68,9 +85,6 @@ export default function Pomogni() {
               Нарушенията се глобяват по Закона за горите, а предизвикването на горски пожар може да е престъпление.
             </p>
           </section>
-        </div>
-
-        <ReportForm />
       </div>
     </div>
   );

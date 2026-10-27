@@ -44,13 +44,13 @@ export function Conditions({ risk, oblast }: { risk: RiskResponse | null; oblast
       <h2 id="cond-title" className="px-1 font-display text-[20px] font-semibold">
         Въздух и предупреждения
       </h2>
-      <div className="mt-3 flex flex-col divide-y divide-line overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
+      <div className="mt-3 flex flex-col divide-y divide-line overflow-hidden rounded-[20px] bg-card">
         {air && band && (
           <div className="flex gap-3 p-4">
             <AirIcon size={22} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden />
             <div className="min-w-0 flex-1">
               <p className="text-[16px] font-semibold">
-                Въздухът сега: <span className="inline-flex items-center gap-1.5">
+                Въздух: <span className="inline-flex items-center gap-1.5">
                   <span className="size-2.5 rounded-full" style={{ background: band.color }} aria-hidden />
                   {band.label.toLowerCase()}
                 </span>

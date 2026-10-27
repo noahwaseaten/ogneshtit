@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/onest";
 import "./globals.css";
-import { Sidebar, TabBar } from "@/components/Shell";
+import { Sidebar, TabBar, TopBar } from "@/components/Shell";
 import { RegisterSW } from "@/components/RegisterSW";
 
 const SITE = "https://ogneshtit.noahwaseaten.com";
@@ -40,8 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body>
         <Sidebar />
+        <TopBar />
         <div className="lg:pl-[248px]">
-          <main className="mx-auto max-w-xl px-4 pb-[calc(var(--tabbar-h)_+_env(safe-area-inset-bottom)_+_32px)] pt-[max(16px,env(safe-area-inset-top))] lg:max-w-[1180px] lg:px-10 lg:pb-16 lg:pt-10">
+          <main className="mx-auto max-w-xl px-4 pb-[calc(var(--tabbar-h)_+_env(safe-area-inset-bottom)_+_32px)] pt-4 lg:max-w-[1180px] lg:px-10 lg:pb-16 lg:pt-10">
             {children}
           </main>
         </div>

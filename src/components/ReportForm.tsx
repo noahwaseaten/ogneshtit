@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Axe, Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
-import { sofiaTime, useLocation } from "@/lib/client";
+import { Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
+import { getPosition, sofiaTime, useLocation } from "@/lib/client";
 import { nearestRdg, telOf, useRdgs } from "./rdg";
 
 const KINDS = ["Сеч без марки или позволително", "Извозване на дървесина", "Бракониерство", "Палене на огън", "Отпадъци в гората", "Друго"];
@@ -17,7 +17,7 @@ export function ReportForm() {
   const [kind, setKind] = useState(KINDS[0]);
   const [pos, setPos] = useState<{ lat: number; lon: number; acc: number } | null>(null);
   const [locating, setLocating] = useState(false);
-  const [locErr, setLocErr] = useState(false);
+  const [locErr, setLocErr] = useState<string | null>(null);
   const [place, setPlace] = useState("");
   const [plate, setPlate] = useState("");
   const [desc, setDesc] = useState("");
@@ -39,21 +39,38 @@ export function ReportForm() {
   }, [photos]);
   useEffect(() => () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.url)), []);
 
+  // Photos shared into the app from the gallery (see the share target in public/sw.js).
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const n = Number(sp.get("shared") ?? 0);
+    const text = sp.get("text");
+    if (!n && !text) return;
+    (async () => {
+      if (text) setDesc(text);
+      if (n && "caches" in window) {
+        const cache = await caches.open("ogneshtit-shared");
+        const files: Photo[] = [];
+        for (let i = 0; i < n; i++) {
+          const res = await cache.match(`/shared/${i}`);
+          if (!res) continue;
+          const blob = await res.blob();
+          const file = new File([blob], decodeURIComponent(res.headers.get("x-name") ?? `photo-${i}.jpg`), { type: blob.type });
+          files.push({ file, url: URL.createObjectURL(file) });
+          await cache.delete(`/shared/${i}`);
+        }
+        setPhotos(files);
+      }
+      window.history.replaceState(null, "", window.location.pathname);
+    })();
+  }, []);
+
   const locate = () => {
-    if (!("geolocation" in navigator)) return setLocErr(true);
     setLocating(true);
-    setLocErr(false);
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setPos({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy });
-        setLocating(false);
-      },
-      () => {
-        setLocErr(true);
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
-    );
+    setLocErr(null);
+    getPosition(true)
+      .then((p) => setPos({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }))
+      .catch((e: Error) => setLocErr(e.message))
+      .finally(() => setLocating(false));
   };
 
   // Composed when sent, so "Кога" is the moment of sending.
@@ -98,9 +115,8 @@ export function ReportForm() {
   const field = "w-full rounded-2xl border border-line bg-surface px-4 text-[16px] outline-none placeholder:text-muted focus:border-accent";
 
   return (
-    <section aria-labelledby="report-title" className="rounded-[28px] bg-card p-5 shadow-[var(--shadow)] lg:p-6">
-      <div className="flex items-center gap-3">
-        <Axe size={26} strokeWidth={1.5} aria-hidden />
+    <section aria-labelledby="report-title" className="rounded-[20px] bg-card p-5 lg:p-6">
+      <div>
         <h2 id="report-title" className="font-display text-[22px] font-semibold leading-tight">
           Незаконна сеч или бракониерство?
         </h2>
@@ -152,10 +168,10 @@ export function ReportForm() {
             {locating ? "Търсим сигнал от GPS…" : "Добави точните ми координати"}
           </button>
         )}
-        {locErr && <p className="pt-2 text-[14px] text-ember">Няма достъп до местоположението. Опишете мястото по-долу.</p>}
+        {locErr && <p className="pt-2 text-[14px] leading-snug text-ember">{locErr} Може и да опишете мястото по-долу.</p>}
         <label className="mt-2 block">
           <span className="sr-only">Описание на мястото</span>
-          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Най-близкото село, път или местност" className={`${field} min-h-12`} />
+          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Село, път или местност" className={`${field} min-h-12`} />
         </label>
       </div>
 
