@@ -4,7 +4,6 @@ import { useSyncExternalStore } from "react";
 import { Share, SquarePlus, MoreVertical, MoreHorizontal, Menu, MonitorDown } from "lucide-react";
 import { InstallButton, useInstall } from "./Install";
 import { useI18n } from "@/i18n/client";
-import { SettingsGroup } from "./Settings";
 
 type Platform = "ios" | "android" | "desktop";
 type Browser = "safari" | "chrome" | "samsung" | "firefox" | "edge" | "other";
@@ -38,7 +37,7 @@ function Steps({ items }: { items: React.ReactNode[] }) {
     <ol className="flex flex-col gap-3">
       {items.map((it, i) => (
         <li key={i} className="flex gap-3">
-          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-tonal text-[14px] font-semibold tabular-nums text-accent">
+          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent/15 text-[14px] font-semibold tabular-nums text-accent">
             {i + 1}
           </span>
           <span className="pt-0.5 text-[16px] leading-snug">{it}</span>
@@ -163,21 +162,22 @@ export function InstallHelp() {
   };
 
   return (
-    <SettingsGroup
-      id="install"
-      title={t("Приложение", "App")}
-      note={t("Отваря се на цял екран и показва последните данни и без интернет.", "It opens full screen and shows the latest data even offline.")}
-    >
-      <div className="bg-card p-4">
+    <section id="install" aria-labelledby="install-title" className="scroll-mt-20">
+      <h2 id="install-title" className="px-1 text-[17px] font-semibold">
+        {t("Сложете го на началния екран", "Add it to your home screen")}
+      </h2>
+      <p className="px-1 pt-1 text-[15px] leading-snug text-muted">
+        {t("Отваря се на цял екран и показва последните данни и без интернет.", "It opens full screen and shows the latest data even offline.")}
+      </p>
+      <div className="mt-3 rounded-[20px] bg-card p-4">
         {canPrompt && (
           <div className="pb-4">
             <InstallButton />
             <p className="pt-3 text-[14px] text-muted">{t("Или ръчно:", "Or by hand:")}</p>
           </div>
         )}
-        <p className="pb-3 text-[16px] font-semibold">{t("Сложете го на началния екран", "Add it to your home screen")}</p>
         {content[tab]}
       </div>
-    </SettingsGroup>
+    </section>
   );
 }

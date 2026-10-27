@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flame, Map, BarChart3, LifeBuoy, Settings, Monitor, Sun, Moon } from "lucide-react";
+import { Flame, Map, BarChart3, LifeBuoy, Settings, Monitor, Sun, Moon, Phone } from "lucide-react";
 import { InstallButton } from "./Install";
 import { useTheme, type ThemeChoice } from "@/lib/client";
 import { useI18n } from "@/i18n/client";
@@ -81,7 +81,9 @@ export function Sidebar() {
           <Settings size={20} strokeWidth={isActive(path, SETTINGS) ? 2.25 : 1.75} aria-hidden className={isActive(path, SETTINGS) ? "text-accent" : undefined} />
           {t("Настройки", "Settings")}
         </Link>
-        <a href="tel:112" className="pressable flex min-h-11 items-center justify-center rounded-full bg-[#c7361f] text-[15px] font-semibold text-white">
+        <ThemeControl compact />
+        <a href="tel:112" className="pressable flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#c7361f] text-[15px] font-semibold text-white">
+          <Phone size={18} strokeWidth={2} aria-hidden />
           {t("Спешно: 112", "Emergency: 112")}
         </a>
       </div>
@@ -109,7 +111,7 @@ export function TopBar() {
             href={SETTINGS}
             aria-label={t("Настройки", "Settings")}
             aria-current={path === SETTINGS ? "page" : undefined}
-            className="pressable grid size-11 place-items-center rounded-full text-muted hover:bg-line/60 aria-[current=page]:bg-tonal aria-[current=page]:text-accent"
+            className="pressable grid size-11 place-items-center rounded-full text-muted hover:bg-line/60 aria-[current=page]:text-accent"
           >
             <Settings size={22} strokeWidth={1.75} aria-hidden />
           </Link>

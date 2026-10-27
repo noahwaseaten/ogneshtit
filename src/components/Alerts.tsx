@@ -7,7 +7,7 @@ import { useLocation } from "@/lib/client";
 import { oblastAt } from "@/lib/oblast";
 import type { Prefs } from "@/lib/alerts";
 import { useInstall } from "./Install";
-import { ButtonGroup, SettingsGroup } from "./Settings";
+import { Segmented as Pills, SettingsGroup } from "./Settings";
 import { useI18n } from "@/i18n/client";
 import { placeName } from "@/i18n/names";
 import { SETTINGS } from "./Shell";
@@ -62,9 +62,9 @@ function useHidden() {
 
 type State = "loading" | "unsupported" | "needs-install" | "denied" | "off" | "on";
 
-/** Settings-style connected button group for one preference. */
+/** The app's pill segmented control for one preference. */
 function Segmented<T extends string | number>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
-  return <ButtonGroup label={label} value={value} options={options.map(([v, text]) => ({ value: v, label: text }))} onChange={onChange} />;
+  return <Pills label={label} value={value} options={options.map(([v, text]) => ({ value: v, label: text }))} onChange={onChange} />;
 }
 
 /**

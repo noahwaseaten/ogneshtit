@@ -1,92 +1,87 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, ArrowUpRight } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowUpRight, ChevronRight } from "lucide-react";
 
-// Building blocks for the Settings screen, after Material 3 Expressive: a coloured section label,
-// rows grouped into one rounded surface split by thin gaps (big outer corners, small inner ones),
-// a tonal shape behind each icon, and connected button groups whose selected button morphs into
-// a full pill.
+// Building blocks for the Settings screen, in the app's own style: a section heading, one card with
+// rows split by hairlines, and the same pill segmented control used elsewhere (theme, alerts).
 
-export function SettingsGroup({
-  id,
-  title,
-  note,
-  children,
-}: {
-  id?: string;
-  title: string;
-  note?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+export function SettingsGroup({ id, title, note, children }: { id?: string; title: string; note?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section id={id} aria-label={title} className="scroll-mt-20">
-      <h2 className="px-4 pb-2 text-[14px] font-semibold tracking-[0.01em] text-accent">{title}</h2>
-      <div className="flex flex-col gap-[3px] overflow-hidden rounded-[28px] [&>*]:rounded-[6px]">{children}</div>
-      {note && <p className="px-4 pt-2 text-[14px] leading-snug text-muted">{note}</p>}
+    <section id={id} aria-label={title} className="flex scroll-mt-20 flex-col gap-2">
+      <h2 className="px-1 text-[17px] font-semibold">{title}</h2>
+      <div className="divide-y divide-line overflow-hidden rounded-[20px] bg-card">{children}</div>
+      {note && <p className="px-1 text-[14px] leading-snug text-muted">{note}</p>}
     </section>
   );
 }
 
-type RowProps = {
-  icon?: LucideIcon;
+const rowCls = "flex min-h-12 items-center gap-3 px-4 py-3";
+
+/** One line: title (and an optional muted line under it) on the left, a value or control on the right. */
+export function SettingsRow({
+  icon,
+  title,
+  subtitle,
+  trailing,
+  below,
+  href,
+  external,
+}: {
+  /** Only for rows where the icon helps recognise the action (call, GitHub). */
+  icon?: React.ReactNode;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
-  /** Control on the right (a switch, a value). Ignored when the row is a link. */
   trailing?: React.ReactNode;
-  /** Below the text: a full-width control such as a button group. */
+  /** A full-width control under the title, such as a segmented control. */
   below?: React.ReactNode;
   href?: string;
   external?: boolean;
-};
-
-export function SettingsRow({ icon: Icon, title, subtitle, trailing, below, href, external }: RowProps) {
-  const body = (
+}) {
+  const main = (
     <>
-      <div className="flex items-center gap-4">
-        {Icon && (
-          <span className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-tonal text-accent" aria-hidden>
-            <Icon size={20} strokeWidth={2} />
-          </span>
-        )}
-        <span className="min-w-0 flex-1">
-          <span className="block text-[16px] font-medium leading-snug">{title}</span>
-          {subtitle && <span className="block pt-0.5 text-[14px] leading-snug text-muted">{subtitle}</span>}
+      {icon && <span className="grid size-6 shrink-0 place-items-center text-content [&_svg]:size-5">{icon}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[16px] font-medium leading-snug">{title}</span>
+        {subtitle && <span className="block pt-0.5 text-[14px] leading-snug text-muted">{subtitle}</span>}
+      </span>
+      {href ? (
+        <span className="flex shrink-0 items-center gap-1.5 text-[14px] text-muted">
+          {trailing}
+          {external ? <ArrowUpRight size={16} strokeWidth={2} aria-hidden /> : <ChevronRight size={18} strokeWidth={2} aria-hidden />}
         </span>
-        {href ? (
-          external ? (
-            <ArrowUpRight size={18} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
-          ) : (
-            <ChevronRight size={20} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
-          )
-        ) : (
-          trailing
-        )}
-      </div>
-      {below && <div className="pt-3">{below}</div>}
+      ) : (
+        trailing
+      )}
     </>
   );
-  const cls = "block bg-card px-4 py-3.5 min-h-16";
-  if (!href) return <div className={cls}>{body}</div>;
+
+  if (!href)
+    return below ? (
+      <div className="flex flex-col gap-3 px-4 py-3">
+        <div className="flex items-center gap-3">{main}</div>
+        {below}
+      </div>
+    ) : (
+      <div className={rowCls}>{main}</div>
+    );
+
+  const linkCls = `${rowCls} transition-colors duration-150 hover:bg-line/40 active:bg-line`;
   if (external || href.startsWith("tel:"))
     return (
-      <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined} className={`${cls} transition-colors duration-150 hover:bg-line/50 active:bg-line`}>
-        {body}
+      <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined} className={linkCls}>
+        {main}
       </a>
     );
   return (
-    <Link href={href} className={`${cls} transition-colors duration-150 hover:bg-line/50 active:bg-line`}>
-      {body}
+    <Link href={href} className={linkCls}>
+      {main}
     </Link>
   );
 }
 
-/**
- * Connected button group (M3 Expressive): neighbours sit 2 px apart with small inner corners, and
- * the selected one becomes a full pill in the accent colour. The corner change animates.
- */
-export function ButtonGroup<T extends string | number>({
+/** The app's pill segmented control (same look as the theme switch in the sidebar). */
+export function Segmented<T extends string | number>({
   label,
   value,
   options,
@@ -94,33 +89,34 @@ export function ButtonGroup<T extends string | number>({
 }: {
   label: string;
   value: T;
-  options: { value: T; label: React.ReactNode; icon?: LucideIcon; ariaLabel?: string }[];
+  options: { value: T; label: React.ReactNode; icon?: React.ReactNode }[];
   onChange: (v: T) => void;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-[2px]">
-      {options.map((o, i) => {
-        const on = o.value === value;
-        const first = i === 0;
-        const last = i === options.length - 1;
-        return (
-          <button
-            key={String(o.value)}
-            role="radio"
-            aria-checked={on}
-            aria-label={o.ariaLabel}
-            onClick={() => onChange(o.value)}
-            className={`pressable flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 px-2 text-[14px] font-semibold transition-[border-radius,background-color,color] duration-300 ease-[var(--ease-out)] ${
-              on
-                ? "rounded-full bg-accent text-accent-content"
-                : `bg-line text-content hover:bg-line/70 ${first ? "rounded-l-full rounded-r-[8px]" : last ? "rounded-r-full rounded-l-[8px]" : "rounded-[8px]"}`
-            }`}
-          >
-            {o.icon && <o.icon size={17} strokeWidth={2} aria-hidden className="shrink-0" />}
-            <span className="truncate">{o.label}</span>
-          </button>
-        );
-      })}
+    <div role="radiogroup" aria-label={label} className="grid rounded-full bg-line p-1" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`flex min-h-10 items-center justify-center gap-1.5 rounded-full px-2 text-[14px] font-semibold transition-colors duration-150 ${
+            value === o.value ? "bg-tonal text-content" : "text-muted hover:text-content"
+          }`}
+        >
+          {o.icon}
+          <span className="truncate">{o.label}</span>
+        </button>
+      ))}
     </div>
+  );
+}
+
+/** GitHub's mark (lucide no longer ships brand icons). */
+export function GithubIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+    </svg>
   );
 }

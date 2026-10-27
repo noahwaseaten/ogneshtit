@@ -13,7 +13,9 @@ import { placeName } from "@/i18n/names";
 // Performance: during a gesture the viewBox is written straight to the DOM (no React render);
 // React only re-renders when the gesture ends, which is when markers are re-clustered.
 
-export type MapPoint = { id: string; lat: number; lon: number; label: string };
+/** `color` and `rank` let points say how fresh they are; a group takes the colour of its lowest rank. */
+export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number };
+const pointColor = (pts: MapPoint[]) => [...pts].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))[0]?.color ?? "var(--ember)";
 
 const MAJOR = new Set(["София", "Пловдив", "Варна", "Бургас", "Русе", "Плевен", "Стара Загора", "Благоевград"]);
 const MAX_ZOOM = 40;
@@ -530,7 +532,7 @@ export function BulgariaMap({
                     <g key={p.id} role="button" tabIndex={0} aria-label={p.label} className="cursor-pointer outline-none" onClick={() => tap(() => onPoints?.([p]))} onKeyDown={onKey(() => onPoints?.([p]))}>
                       <line x1={c.x} y1={c.y} x2={x} y2={y} stroke="var(--muted)" strokeWidth={1 * upp} />
                       <circle cx={x} cy={y} r={14 * upp} fill="transparent" />
-                      <circle cx={x} cy={y} r={5.5 * upp} fill="var(--ember)" stroke="var(--card)" strokeWidth={1.5 * upp} />
+                      <circle cx={x} cy={y} r={5.5 * upp} fill={p.color ?? "var(--ember)"} stroke="var(--card)" strokeWidth={1.5 * upp} />
                     </g>
                   );
                 })}
@@ -549,7 +551,7 @@ export function BulgariaMap({
               onKeyDown={onKey(() => openCluster(c))}
             >
               <circle cx={c.x} cy={c.y} r={22 * upp} fill="transparent" />
-              <circle cx={c.x} cy={c.y} r={rad} fill="var(--ember)" stroke="var(--card)" strokeWidth={1.5 * upp} pointerEvents="none" />
+              <circle cx={c.x} cy={c.y} r={rad} fill={pointColor(c.pts)} stroke="var(--card)" strokeWidth={1.5 * upp} pointerEvents="none" />
               {n > 1 && (
                 <text x={c.x} y={c.y} dy="0.35em" textAnchor="middle" fontSize={fontPx} fontWeight={600} fill="#fff" pointerEvents="none" style={{ fontVariantNumeric: "tabular-nums" }}>
                   {n}

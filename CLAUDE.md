@@ -53,6 +53,8 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
   `.pressable` (scale .96 on press), tabular numbers for data, concentric radii, shadows for elevation and borders
   for structure, no `transition: all`, icon swaps via `.swap`, colour never the only signal, contrast ≥ 4.5:1,
   `prefers-reduced-motion` respected.
+- Satellite fires are coloured by age (`--fire-new` under 6 h, `--fire-day` under 24 h, `--fire-old` older; `FIRE_AGES` in
+  FiresNear). Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
 
 ## Languages (Bulgarian and English)
 
@@ -89,6 +91,7 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
 | Truck tickets | ИАГ `GET /e_tickets/search?session=000&user_id=1&search_by=2|3&search_text=<digits>&lng=bg` and `/e_tickets/get?...&type=&ticket_id=&digest=xxxn` (JSON) | `iag.ts`, `/api/ticket`, `/api/ticket/[type]/[id]` |
 | Regional directorates | ИАГ pages `/struct/lang/1/type/R/id/{2..17}/unit_single`, scraped weekly (office phone, e-mail; the "дежурен телефон" on some pages is for forestry operators, not the public) | `iag.ts`, `src/data/rdg.ts`, `/api/rdg` |
 | Weather warnings | MeteoAlarm feed `feeds-bulgaria` (НИМХ) | `src/lib/warnings.ts`, `/api/warnings` |
+| Source status (Settings) | The same cached helpers, checked together | `/api/status`, `SettingsView.tsx` |
 | Place search | Open-Meteo geocoding, called from the browser | `LocationPicker.tsx` |
 | Oblast shapes | Natural Earth admin-1 → `scripts/oblasts.mjs` → `src/data/oblasts.ts` (do not edit by hand) | `BulgariaMap.tsx`, `src/lib/oblast.ts` |
 

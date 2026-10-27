@@ -11,7 +11,7 @@ import { placeName } from "@/i18n/names";
 import type { DangerMap } from "@/lib/risk";
 import type { FireStats } from "@/lib/iag";
 import { BulgariaMap } from "./BulgariaMap";
-import { NEAR_KM, SpotRow, SpotSheet, firesWord, useSpots, whoOf, type Spot } from "./FiresNear";
+import { FIRE_AGES, NEAR_KM, SpotRow, SpotSheet, firesWord, useSpots, whoOf, type Spot } from "./FiresNear";
 import { Sheet } from "./Sheet";
 
 type Layer = "fires" | "danger" | "burnt";
@@ -153,16 +153,21 @@ export function MapView() {
 
 function Legend({ layer, hours, who }: { layer: Layer; hours?: number; who: string }) {
   const item = "inline-flex items-center gap-1.5";
-  const { t, lang } = useI18n();
+  const { t, tp, lang } = useI18n();
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line px-4 py-3 text-[13px] text-muted" aria-label={t("Легенда", "Legend")}>
       {layer === "fires" && (
         <>
           <li className={item}>
-            <span className="size-3 rounded-full bg-[var(--ember)]" aria-hidden />
             {t("Огън от спътник", "Fire seen by satellite")}
-            {hours ? `, ${hours} ${t("ч", "h")}` : ""}
+            {hours ? t(` за ${hours} ч:`, ` in ${hours} h:`) : ":"}
           </li>
+          {FIRE_AGES.map((a) => (
+            <li key={a.color} className={item}>
+              <span className="size-3 rounded-full" style={{ background: a.color }} aria-hidden />
+              {tp(a.label)}
+            </li>
+          ))}
           <li className={item}>
             <span className="size-3 rounded-full bg-[#1f6fd1]" aria-hidden />
             {who}

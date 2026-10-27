@@ -25,6 +25,18 @@ export const firesWord = (n: number, lang: Lang) =>
 
 export type Spot = Hotspot & { id: string; km: number; dir: string };
 
+/** Fires by age, so the map shows what is burning now apart from what was seen yesterday. */
+export const FIRE_AGES = [
+  { maxH: 6, color: "var(--fire-new)", label: ["последните 6 ч", "last 6 h"] },
+  { maxH: 24, color: "var(--fire-day)", label: ["до 24 ч", "6 to 24 h"] },
+  { maxH: Infinity, color: "var(--fire-old)", label: ["по-стари", "older"] },
+] as const;
+export const ageRank = (iso: string, now = Date.now()) => {
+  const h = (now - new Date(iso).getTime()) / 3600e3;
+  return FIRE_AGES.findIndex((a) => h <= a.maxH);
+};
+export const ageColor = (iso: string) => FIRE_AGES[ageRank(iso)].color;
+
 /** "18 км на северозапад" / "18 km northwest" */
 const where = (s: Spot, lang: Lang) => (lang === "bg" ? `${Math.round(s.km)} км на ${s.dir}` : `${Math.round(s.km)} km ${s.dir}`);
 
@@ -48,7 +60,15 @@ export function useSpots(loc: Loc) {
     [res.data, loc.lat, loc.lon, lang],
   );
   const points = useMemo<MapPoint[]>(
-    () => all.map((s) => ({ id: s.id, lat: s.lat, lon: s.lon, label: `${t("Огнище на", "Fire")} ${where(s, lang)}, ${agoLong(s.time)}` })),
+    () =>
+      all.map((s) => ({
+        id: s.id,
+        lat: s.lat,
+        lon: s.lon,
+        label: `${t("Огнище на", "Fire")} ${where(s, lang)}, ${agoLong(s.time)}`,
+        color: ageColor(s.time),
+        rank: ageRank(s.time),
+      })),
     [all, t, lang, agoLong],
   );
   const byId = useMemo(() => new Map(all.map((s) => [s.id, s])), [all]);
@@ -185,8 +205,9 @@ export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | nul
 export function SpotRow({ s, onClick }: { s: Spot; onClick: () => void }) {
   const { t, lang, agoLong } = useI18n();
   return (
-    <button onClick={onClick} className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-line/50 active:bg-line">
-      <span className="min-w-0">
+    <button onClick={onClick} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-line/50 active:bg-line">
+      <span className="size-3 shrink-0 rounded-full" style={{ background: ageColor(s.time) }} aria-hidden />
+      <span className="min-w-0 flex-1">
         <span className="block text-[16px] font-medium tabular-nums">
           {where(s, lang)}
           {s.km <= NEAR_KM && <span className="text-ember"> · {t("наблизо", "nearby")}</span>}

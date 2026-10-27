@@ -14,6 +14,10 @@
   --accent: #1f5b3e; /* fir */
   --accent-content: #ffffff;
   --ember: #c7361f;
+  /* Satellite fires by age: fresh, today, older (cooling down). */
+  --fire-new: #e0401a;
+  --fire-day: #e8891c;
+  --fire-old: #8f8277;
   /* Surfaces are separated by tone, not by shadows. Only things that float (the selected
      segment, sheets) get --lift. */
   --shadow: none;
@@ -48,6 +52,9 @@
     --accent: #7fcf9e;
     --accent-content: #0e1411;
     --ember: #ff7a5c;
+    --fire-new: #ff6a3d;
+    --fire-day: #f2a33a;
+    --fire-old: #9b9087;
     --land: #223029;
     --land-line: oklch(1 0 0 / 0.16);
     --shadow: none;
@@ -56,6 +63,9 @@
   }
 }
 :root[data-theme="dark"] {
+  --fire-new: #ff6a3d;
+  --fire-day: #f2a33a;
+  --fire-old: #9b9087;
   --surface: #0e1411;
   --card: #18201b;
   --raised: #1f2822;
