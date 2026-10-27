@@ -164,6 +164,35 @@ export function useTheme() {
   return [theme, applyTheme] as const;
 }
 
+// Advanced: extra detail most people do not need (the satellite schedule on Today). Off by default.
+const ADV_KEY = "ogneshtit:advanced";
+const advListeners = new Set<() => void>();
+const readAdvanced = () => {
+  try {
+    return localStorage.getItem(ADV_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+export function useAdvanced() {
+  const on = useSyncExternalStore(
+    (cb) => {
+      advListeners.add(cb);
+      return () => advListeners.delete(cb);
+    },
+    readAdvanced,
+    () => false,
+  );
+  const set = (v: boolean) => {
+    try {
+      localStorage.setItem(ADV_KEY, v ? "1" : "0");
+    } catch {}
+    advListeners.forEach((l) => l());
+  };
+  return [on, set] as const;
+}
+
 /**
  * One reliable way to ask for the position. Tries a quick, coarse fix first and then a precise one,
  * and turns every failure into a sentence a person can act on (Safari on iPhone is the strict one).

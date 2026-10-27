@@ -212,6 +212,15 @@ p {
   }
 }
 
+/* A progress bar that fills once when it appears (scaleX, left origin). */
+.fill {
+  transform: scaleX(var(--p, 1));
+  transition: transform 520ms var(--ease-out);
+  @starting-style {
+    transform: scaleX(0);
+  }
+}
+
 .skeleton {
   background: linear-gradient(90deg, var(--line), transparent, var(--line));
   background-size: 200% 100%;
@@ -236,7 +245,8 @@ p {
   .skeleton {
     animation: none;
   }
-  .rise {
+  .rise,
+  .fill {
     transition: none;
   }
 }

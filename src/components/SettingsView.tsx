@@ -1,12 +1,12 @@
 "use client";
 
-import { Monitor, Moon, Phone, Sun } from "lucide-react";
-import { useJson, useTheme } from "@/lib/client";
+import { Monitor, Moon, Phone, Satellite, Sun } from "lucide-react";
+import { useAdvanced, useJson, useTheme } from "@/lib/client";
 import { setLanguage, useI18n } from "@/i18n/client";
 import type { StatusResponse, SourceStatus } from "@/app/api/status/route";
 import { Alerts } from "./Alerts";
 import { InstallHelp } from "./InstallHelp";
-import { GithubIcon, Segmented, SettingsGroup, SettingsRow } from "./Settings";
+import { GithubIcon, Segmented, SettingsGroup, SettingsRow, SettingsToggle } from "./Settings";
 import { REPO } from "./Shell";
 
 type Source = { key: SourceStatus["key"] | null; name: [string, string]; what: [string, string]; href: string };
@@ -19,6 +19,7 @@ const SOURCES: Source[] = [
     what: ["Огън от 5 спътника (VIIRS и MODIS)", "Fire from 5 satellites (VIIRS and MODIS)"],
     href: "https://firms.modaps.eosdis.nasa.gov",
   },
+  { key: null, name: ["CelesTrak", "CelesTrak"], what: ["Орбити на спътниците, за часовете на преминаване", "Satellite orbits, for pass times"], href: "https://celestrak.org" },
   { key: "iag", name: ["ИАГ", "Executive Forest Agency"], what: ["Пожари, превозни билети, дирекции", "Fires, transport tickets, directorates"], href: "https://www.iag.bg" },
   { key: "warnings", name: ["НИМХ", "NIMH"], what: ["Предупреждения за времето", "Weather warnings"], href: "https://meteoalarm.org" },
   { key: null, name: ["EFFIS", "EFFIS"], what: ["Скалата за опасност", "The danger scale"], href: "https://forest-fire.emergency.copernicus.eu" },
@@ -28,6 +29,7 @@ const SOURCES: Source[] = [
 export function SettingsView() {
   const { t, tp, lang } = useI18n();
   const [theme, setTheme] = useTheme();
+  const [advanced, setAdvanced] = useAdvanced();
   const status = useJson<StatusResponse>("/api/status");
   const byKey = new Map((status.data?.sources ?? []).map((s) => [s.key, s]));
 
@@ -71,6 +73,19 @@ export function SettingsView() {
       <Alerts />
 
       <InstallHelp />
+
+      <SettingsGroup title={t("За напреднали", "Advanced")}>
+        <SettingsToggle
+          icon={<Satellite strokeWidth={1.75} aria-hidden />}
+          title={t("График на спътниците", "Satellite schedule")}
+          subtitle={t(
+            "Показва на началния екран кога минава всеки спътник. Подсказките при огньовете се виждат и без това.",
+            "Shows on the home screen when each satellite passes. The hints on fires show either way.",
+          )}
+          checked={advanced}
+          onChange={setAdvanced}
+        />
+      </SettingsGroup>
 
       <SettingsGroup
         title={t("Данни", "Data")}

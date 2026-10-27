@@ -80,6 +80,32 @@ export function SettingsRow({
   );
 }
 
+/**
+ * A whole-row on/off switch (the row is the 44 px+ target). Track and knob follow the app's tokens; only
+ * transform and background colour animate, and the on state is also shown by the knob's position.
+ */
+export function SettingsToggle({ icon, title, subtitle, checked, onChange }: { icon?: React.ReactNode; title: React.ReactNode; subtitle?: React.ReactNode; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`${rowCls} hover-fill w-full text-left`}>
+      {icon && <span className="grid size-6 shrink-0 place-items-center text-content [&_svg]:size-5">{icon}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[16px] font-medium leading-snug">{title}</span>
+        {subtitle && <span className="block pt-0.5 text-[14px] leading-[1.4] text-muted">{subtitle}</span>}
+      </span>
+      <span
+        className="relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-200"
+        style={{ background: checked ? "var(--accent)" : "var(--line)", boxShadow: checked ? "none" : "inset 0 0 0 1px var(--line)" }}
+        aria-hidden
+      >
+        <span
+          className="absolute left-0.5 top-0.5 size-[27px] rounded-full bg-white transition-transform duration-200 [transition-timing-function:var(--ease-out)]"
+          style={{ transform: checked ? "translateX(20px)" : "none", boxShadow: "0 1px 3px oklch(0 0 0 / 0.25)" }}
+        />
+      </span>
+    </button>
+  );
+}
+
 /** The app's pill segmented control (same look as the theme switch in the sidebar). */
 export function Segmented<T extends string | number>({
   label,

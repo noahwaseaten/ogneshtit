@@ -1,6 +1,8 @@
 import { cacheLife } from "next/cache";
 import { inBulgaria } from "./geo";
 import { loadBackup } from "./backup";
+import { getPasses } from "./passes";
+import { DATA_DELAY_MIN, SHARP_ANGLE, type Pass } from "./pass-types";
 
 // Satellite fires, made trustworthy.
 //
@@ -14,7 +16,8 @@ import { loadBackup } from "./backup";
 // 4. A spot that has lit up on many separate days in the last two weeks is a permanent heat source
 //    (a smelter, power plant, refinery or landfill), not a wildfire. Example: the copper smelter near Pirdop.
 // 5. If a later satellite pass went over Bulgaria and did not see the fire again, it may be out (or hidden
-//    by cloud); the app says so instead of showing it as burning.
+//    by cloud); the app says so instead of showing it as burning. A pass counts when it found heat anywhere
+//    in the region, or when its orbit says it looked at Bulgaria and its data should be in by now (passes.ts).
 //
 // Sources, in order: FIRMS API with our free key → FIRMS public 24 h files (no key, different servers) →
 // the last good copy saved in Vercel Blob by the cron job. Each satellite feed can fail on its own.
@@ -189,10 +192,20 @@ function cluster(ds: Detection[]) {
 
 const RANK: Record<Confidence, number> = { low: 0, nominal: 1, high: 2 };
 
-export function buildFires(recent: Detection[], history: Detection[], now = Date.now()): { fires: Fire[]; lastPass: string | null } {
+export function buildFires(
+  recent: Detection[],
+  history: Detection[],
+  now = Date.now(),
+  predicted: Pass[] = [],
+): { fires: Fire[]; lastPass: string | null; seen: { sat: Sat; t: string }[] } {
   const windowStart = now - HOURS * 3600e3;
   const inWindow = recent.filter((d) => Date.parse(d.time) >= windowStart);
-  const regionPasses = passesOf(inWindow).filter((p) => VIIRS.includes(p.sat));
+  const seen = passesOf(inWindow);
+  // Passes the orbits say looked at Bulgaria sharply and whose data is in by now, even if they found nothing.
+  const looked = predicted
+    .filter((p) => VIIRS.includes(p.sat) && p.angle <= SHARP_ANGLE && p.peak >= windowStart && p.peak <= now - DATA_DELAY_MIN * 60e3)
+    .map((p) => ({ sat: p.sat, t: p.peak }));
+  const regionPasses = seen.filter((p) => VIIRS.includes(p.sat));
   const lastPass = inWindow.reduce<number>((m, d) => Math.max(m, Date.parse(d.time)), 0);
   const ours = inWindow.filter((d) => inBulgaria(d.lat, d.lon));
 
@@ -212,7 +225,8 @@ export function buildFires(recent: Detection[], history: Detection[], now = Date
 
     // Later VIIRS passes that did not see it. Passes within 3 h of each other count once (they look at
     // the same afternoon or night), and we wait 30 min after the last sighting.
-    const later = regionPasses.filter((p) => p.t > last + 30 * 60e3).map((p) => p.t).sort((a, b) => a - b);
+    // An orbit-only pass has to be an hour later: another satellite 50 minutes behind can miss a small fire.
+    const later = [...regionPasses.filter((p) => p.t > last + 30 * 60e3), ...looked.filter((p) => p.t > last + 60 * 60e3)].map((p) => p.t).sort((a, b) => a - b);
     let missed = 0;
     let prev = -Infinity;
     for (const t of later) {
@@ -249,7 +263,11 @@ export function buildFires(recent: Detection[], history: Detection[], now = Date
   });
 
   fires.sort((a, b) => b.last.localeCompare(a.last));
-  return { fires, lastPass: lastPass ? new Date(lastPass).toISOString() : null };
+  return {
+    fires,
+    lastPass: lastPass ? new Date(lastPass).toISOString() : null,
+    seen: seen.map((p) => ({ sat: p.sat, t: new Date(p.t).toISOString() })),
+  };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -258,9 +276,13 @@ export function buildFires(recent: Detection[], history: Detection[], now = Date
 async function getLiveFires(): Promise<FiresResponse> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 900, expire: 21600 });
-  const [recent, history] = await Promise.all([fetchRecent(), getHeatHistory().catch(() => [] as Detection[])]);
-  const { fires, lastPass } = buildFires(recent.detections, history);
-  return { fires, lastPass, hours: recent.hours, source: recent.source, failed: recent.failed, updated: new Date().toISOString() };
+  const [recent, history, orbit] = await Promise.all([
+    fetchRecent(),
+    getHeatHistory().catch(() => [] as Detection[]),
+    getPasses().catch(() => null), // without orbits we only know about passes that found something
+  ]);
+  const { fires, lastPass, seen } = buildFires(recent.detections, history, Date.now(), orbit?.passes);
+  return { fires, lastPass, seen, hours: recent.hours, source: recent.source, failed: recent.failed, updated: new Date().toISOString() };
 }
 
 export const FIRES_BACKUP = "fires";

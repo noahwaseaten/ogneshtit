@@ -29,4 +29,5 @@ jobs:
       - run: npm run lint
       - run: npm run test:fwi
       - run: npm run test:fires
+      - run: npm run test:passes
       - run: npm run build

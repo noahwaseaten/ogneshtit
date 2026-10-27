@@ -6,13 +6,14 @@ import { Phone, Navigation, ChevronRight, ArrowRight } from "lucide-react";
 import { useJson, useNow, type Loc } from "@/lib/client";
 import { distanceKm } from "@/lib/geo";
 import { bearingWord } from "@/lib/oblast";
-import { isCurrent, isReal, type Fire, type FiresResponse, type Sat } from "@/lib/fire-types";
+import { SAT_NAMES, isCurrent, isReal, type Fire, type FiresResponse } from "@/lib/fire-types";
 import { useI18n } from "@/i18n/client";
 import { formatters } from "@/i18n/format";
 import type { Lang } from "@/i18n/lang";
 import { placeName } from "@/i18n/names";
 import { BulgariaMap, type MapPoint } from "./BulgariaMap";
 import { FireTile, HeatMeter } from "./FireMark";
+import { CheckHint, NextCheck, PassCaption, usePassInfo, type PassInfo } from "./Satellites";
 import { Sheet } from "./Sheet";
 
 export const NEAR_KM = 50;
@@ -34,8 +35,6 @@ export const HEAT = [
 ] as const;
 export const heatRank = (frp: number) => Math.max(0, HEAT.findIndex((h) => frp < h.max));
 export const heatColor = (frp: number) => HEAT[heatRank(frp)].color;
-
-export const SAT_NAMES: Record<Sat, string> = { SNPP: "Suomi NPP", "NOAA-20": "NOAA-20", "NOAA-21": "NOAA-21", Terra: "Terra", Aqua: "Aqua" };
 
 /** "18 км на северозапад" / "18 km northwest" */
 const where = (s: Spot, lang: Lang) => (lang === "bg" ? `${Math.round(s.km)} км на ${s.dir}` : `${Math.round(s.km)} km ${s.dir}`);
@@ -59,6 +58,7 @@ export function verdict(s: Fire, lang: Lang) {
  */
 export function useSpots(loc: Loc, showAll = false) {
   const res = useJson<FiresResponse>("/api/fires");
+  const pass = usePassInfo();
   const { lang, t, agoLong } = useI18n();
   const now = useNow();
   const every = useMemo<Spot[]>(
@@ -89,7 +89,7 @@ export function useSpots(loc: Loc, showAll = false) {
     [all, t, lang, agoLong, now],
   );
   const byId = useMemo(() => new Map(every.map((s) => [s.id, s])), [every]);
-  return { ...res, all, hidden, near: all.filter((h) => h.km <= NEAR_KM && isReal(h)), points, byId };
+  return { ...res, pass, all, hidden, near: all.filter((h) => h.km <= NEAR_KM && isReal(h)), points, byId };
 }
 
 /**
@@ -98,7 +98,7 @@ export function useSpots(loc: Loc, showAll = false) {
  * fighting the page scroll.
  */
 export function FiresSummary({ loc }: { loc: Loc }) {
-  const { data, all, near, points, byId, loading } = useSpots(loc);
+  const { data, all, near, points, byId, loading, pass } = useSpots(loc);
   const [picked, setPicked] = useState<Spot[] | null>(null);
   const { t, lang } = useI18n();
   const who = whoOf(loc, lang);
@@ -141,12 +141,13 @@ export function FiresSummary({ loc }: { loc: Loc }) {
           cities={false}
         />
       </div>
-      <SpotSheet spots={picked} who={who} onClose={() => setPicked(null)} onPick={(s) => setPicked([s])} />
+      <PassCaption info={pass} />
+      <SpotSheet spots={picked} who={who} pass={pass} onClose={() => setPicked(null)} onPick={(s) => setPicked([s])} />
     </section>
   );
 }
 
-export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | null; who: string; onClose: () => void; onPick: (s: Spot) => void }) {
+export function SpotSheet({ spots, who, pass, onClose, onPick }: { spots: Spot[] | null; who: string; pass?: PassInfo; onClose: () => void; onPick: (s: Spot) => void }) {
   const one = spots?.length === 1 ? spots[0] : null;
   const { t } = useI18n();
   const title = !one
@@ -170,12 +171,12 @@ export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | nul
       }
     >
       {one ? (
-        <FireDetails f={one} />
+        <FireDetails f={one} pass={pass} />
       ) : (
         <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface">
           {spots?.map((s) => (
             <li key={s.id}>
-              <SpotRow s={s} onClick={() => onPick(s)} />
+              <SpotRow s={s} pass={pass} onClick={() => onPick(s)} />
             </li>
           ))}
         </ul>
@@ -185,7 +186,7 @@ export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | nul
 }
 
 /** Everything we know about one fire, and how sure we are, in plain words. */
-function FireDetails({ f }: { f: Spot }) {
+function FireDetails({ f, pass }: { f: Spot; pass?: PassInfo }) {
   const { t, lang, nf, time, agoLong } = useI18n();
   const now = useNow();
   const when = (iso: string) => time(iso, { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
@@ -228,6 +229,7 @@ function FireDetails({ f }: { f: Spot }) {
         {after && <p className="pt-2 text-[15px] leading-snug">{after}</p>}
         {old && <p className="pt-2 text-[15px] font-medium leading-snug">{t(`Последно видян ${agoLong(f.last)}.`, `Last seen ${agoLong(f.last)}.`)}</p>}
       </div>
+      {pass && f.status !== "static" && f.missed === 0 && !old && <NextCheck f={f} info={pass} />}
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 text-[15px] tabular-nums">
         <div>
           <dt className="text-[13px] text-muted">{t("Последно видян", "Last seen")}</dt>
@@ -275,15 +277,15 @@ function FireDetails({ f }: { f: Spot }) {
       </div>
       <p className="pt-3 text-[14px] leading-snug text-muted">
         {t(
-          "Звъннете, ако виждате дим или огън на място. Точката от спътника сама по себе си не е повод за обаждане. Спътниците минават над България около 13 до 15 ч. и около 1 до 4 ч. през нощта; между две преминавания огън може да пламне или угасне, без да го видят.",
-          "Call if you can see smoke or flames where you are. A satellite dot on its own is not a reason to call. Satellites pass over Bulgaria around 1 to 3 pm and around 1 to 4 am; between passes a fire can start or go out unseen.",
+          "Звъннете, ако виждате дим или огън на място. Точката от спътника сама по себе си не е повод за обаждане. Между две преминавания на спътник огън може да пламне или угасне, без да го видят.",
+          "Call if you can see smoke or flames where you are. A satellite dot on its own is not a reason to call. Between two satellite passes a fire can start or go out unseen.",
         )}
       </p>
     </>
   );
 }
 
-export function SpotRow({ s, onClick }: { s: Spot; onClick: () => void }) {
+export function SpotRow({ s, pass, onClick }: { s: Spot; pass?: PassInfo; onClick: () => void }) {
   const { t, lang, agoLong } = useI18n();
   const now = useNow();
   const pale = !isCurrent(s, now);
@@ -297,6 +299,12 @@ export function SpotRow({ s, onClick }: { s: Spot; onClick: () => void }) {
         </span>
         <span className="block text-[13px] text-muted">
           {verdict(s, lang)} · {agoLong(s.last)}
+          {pass && s.status === "single" && !pale && (
+            <>
+              {" · "}
+              <CheckHint info={pass} />
+            </>
+          )}
           <span className="sr-only">. {t(`${strength(s.frp, "bg")} топлина`, `${strength(s.frp, "en")} heat`)}</span>
         </span>
       </span>

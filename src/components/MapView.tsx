@@ -12,6 +12,7 @@ import type { DangerMap } from "@/lib/risk";
 import type { FireStats } from "@/lib/iag";
 import { BulgariaMap } from "./BulgariaMap";
 import { FireIcon } from "./FireMark";
+import { PassCaption } from "./Satellites";
 import { HEAT, NEAR_KM, SpotRow, SpotSheet, firesWord, useSpots, whoOf, type Spot } from "./FiresNear";
 import { Sheet } from "./Sheet";
 
@@ -152,7 +153,7 @@ export function MapView() {
           {regionInfo}
         </Sheet>
       )}
-      <SpotSheet spots={picked} who={who} onClose={() => setPicked(null)} onPick={(s) => setPicked([s])} />
+      <SpotSheet spots={picked} who={who} pass={spots.pass} onClose={() => setPicked(null)} onPick={(s) => setPicked([s])} />
     </div>
   );
 }
@@ -243,12 +244,13 @@ function FiresSide({
         </span>
       </p>
       <DataNote data={spots.data} />
+      <PassCaption info={spots.pass} />
       {spots.all.length > 0 && (
         <div>
           <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card">
             {list.map((s) => (
               <li key={s.id}>
-                <SpotRow s={s} onClick={() => onPick(s)} />
+                <SpotRow s={s} pass={spots.pass} onClick={() => onPick(s)} />
               </li>
             ))}
           </ul>
