@@ -14,9 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Run the alert check
+      - name: Run the alert check and refresh the backups
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET is not set"; exit 0; fi
           curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" https://ogneshtit.noahwaseaten.com/api/cron/alerts
+          # Saved copies of every data source (writes only when they are older than 6 hours).
+          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" https://ogneshtit.noahwaseaten.com/api/cron/backup || true

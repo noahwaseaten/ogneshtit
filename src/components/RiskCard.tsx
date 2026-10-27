@@ -51,7 +51,9 @@ export function RiskCard({
   const place = loc.source === "gps" ? t("около вас", "around you") : inPlace(placeName(loc.label, lang));
   const rainless = data.daysSinceRain;
   const daysWord =
-    rainless === 0
+    rainless == null
+      ? null
+      : rainless === 0
       ? t("Вали днес", "Rain today")
       : rainless === 1
         ? t("1 ден без дъжд", "1 day without rain")
@@ -114,10 +116,12 @@ export function RiskCard({
               {t(`Вятър ${today.wind} км/ч от ${windFrom(today.windDir, "bg")}`, `Wind ${today.wind} km/h from the ${windFrom(today.windDir, "en")}`)}
             </span>
           </li>
-          <li className="inline-flex items-center gap-2">
-            <CloudRain size={18} strokeWidth={1.75} aria-hidden />
-            {daysWord}
-          </li>
+          {daysWord && (
+            <li className="inline-flex items-center gap-2">
+              <CloudRain size={18} strokeWidth={1.75} aria-hidden />
+              {daysWord}
+            </li>
+          )}
         </ul>
       </div>
 
@@ -163,6 +167,13 @@ export function RiskCard({
           <span className="font-medium text-ember">
             {t(`Нямате връзка. Показваме данните от ${agoLong(data.updated)}.`, `You're offline. Showing data from ${agoLong(data.updated)}.`)}
           </span>
+        ) : data.approx ? (
+          <>
+            {t(
+              "Основната метео услуга не отговаря. Това е приблизителна оценка по прогнозата на MET Norway.",
+              "The main weather service isn't answering. This is an estimate from the MET Norway forecast.",
+            )}
+          </>
         ) : (
           <>{t(`Обновено ${agoLong(data.updated)}.`, `Updated ${agoLong(data.updated)}.`)}</>
         )}

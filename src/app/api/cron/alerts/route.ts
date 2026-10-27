@@ -3,7 +3,7 @@ import { placeName } from "@/i18n/names";
 import { connection } from "next/server";
 import { allSubs, deleteSub, push, saveSub, type Sub } from "@/lib/alerts";
 import { getRisk } from "@/lib/risk";
-import { getFires } from "@/lib/fires";
+import { getFires, isCurrent } from "@/lib/fires";
 import { getWarnings, type Warning } from "@/lib/warnings";
 import { dangerByKey, dangerText } from "@/lib/danger";
 import { distanceKm } from "@/lib/geo";
@@ -53,26 +53,34 @@ export async function GET(req: Request) {
       }
     }
 
-    if (s.prefs.firesKm > 0 && fires) {
-      const near = fires.hotspots.filter((h) => distanceKm(s.place.lat, s.place.lon, h.lat, h.lon) <= s.prefs.firesKm);
-      const seen = new Set(s.sent.fires ?? []);
-      const fresh = near.filter((h) => !seen.has(`${h.lat},${h.lon},${h.time}`));
+    // Only fires we trust and that are burning now: real (not weak, not a factory), seen in the last 6 hours,
+    // not missed by a later pass, and never from a saved copy. One alert per fire, and none for a fire within
+    // 2 km of one we already told this person about.
+    if (s.prefs.firesKm > 0 && fires && !fires.backupFrom) {
+      const now = Date.now();
+      const near = fires.fires.filter((f) => isCurrent(f, now) && now - Date.parse(f.last) < 6 * 3600e3 && distanceKm(s.place.lat, s.place.lon, f.lat, f.lon) <= s.prefs.firesKm);
+      const seen = s.sent.fires ?? [];
+      const seenAt = seen.map((id) => id.split(",").map(Number)).filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
+      const fresh = near.filter((f) => !seen.includes(f.id) && !seenAt.some(([a, b]) => distanceKm(a, b, f.lat, f.lon) < 2));
       if (fresh.length) {
-        const km = Math.round(Math.min(...fresh.map((h) => distanceKm(s.place.lat, s.place.lon, h.lat, h.lon))));
+        const km = Math.round(Math.min(...fresh.map((f) => distanceKm(s.place.lat, s.place.lon, f.lat, f.lon))));
+        const sure = fresh.some((f) => f.status === "confirmed");
         msgs.push({
           title:
             fresh.length === 1
               ? t(`Огън на ${km} км от ${label}`, `Fire ${km} km from ${label}`)
               : t(`${fresh.length} огнища до ${s.prefs.firesKm} км от ${label}`, `${fresh.length} fires within ${s.prefs.firesKm} km of ${label}`),
-          body: t(
-            "Засечено от спътник. Може да е горски пожар или горящо стърнище. Вижте на картата.",
-            "Spotted by satellite. It could be a forest fire or burning stubble. See it on the map.",
-          ),
+          body: sure
+            ? t("Потвърдено от няколко преминавания на спътник. Вижте на картата.", "Confirmed by several satellite passes. See it on the map.")
+            : t(
+                "Засечено от спътник. Може да е горски пожар или горящо стърнище. Вижте на картата.",
+                "Spotted by satellite. It could be a forest fire or burning stubble. See it on the map.",
+              ),
           url: "/karta",
           tag: "fires",
         });
       }
-      next.fires = near.map((h) => `${h.lat},${h.lon},${h.time}`).slice(0, 300);
+      next.fires = [...new Set([...fresh.map((f) => f.id), ...seen])].slice(0, 300);
     }
 
     if (s.prefs.warnings && warnings) {

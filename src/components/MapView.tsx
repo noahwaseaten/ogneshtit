@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Satellite } from "lucide-react";
 import { OBLASTS } from "@/data/oblasts";
 import { DANGERS, dangerByKey, dangerText } from "@/lib/danger";
-import { useJson, useLocation, useMedia, type Loc } from "@/lib/client";
+import { useJson, useLocation, useMedia, useNow, type Loc } from "@/lib/client";
 import { useI18n } from "@/i18n/client";
 import { placeName } from "@/i18n/names";
 import type { DangerMap } from "@/lib/risk";
@@ -39,8 +39,9 @@ export function MapView() {
   const [picked, setPicked] = useState<Spot[] | null>(null);
   const [region, setRegion] = useState<string | null>(null);
   const wide = useMedia("(min-width: 1024px)");
-  const { t, tp, lang, nf } = useI18n();
-  const spots = useSpots(loc);
+  const { t, tp, lang, nf, agoLong } = useI18n();
+  const [showAll, setShowAll] = useState(false);
+  const spots = useSpots(loc, showAll);
   const danger = useJson<DangerMap>(layer === "danger" || region ? "/api/danger-map" : null);
   const burnt = useJson<FireStats>(layer === "burnt" ? `/api/fire-stats?year=${year()}` : null);
   const who = whoOf(loc, lang);
@@ -115,9 +116,13 @@ export function MapView() {
 
         <aside className="flex flex-col gap-4">
           {wide && regionInfo && <div className="rounded-[20px] bg-card p-5">{regionInfo}</div>}
-          {layer === "fires" && <FiresSide loc={loc} spots={spots} onPick={(s) => setPicked([s])} />}
+          {layer === "fires" && <FiresSide loc={loc} spots={spots} showAll={showAll} setShowAll={setShowAll} onPick={(s) => setPicked([s])} />}
           {layer === "danger" && (
             <p className="px-1 text-[15px] leading-snug text-muted">
+              {danger.data?.approx === "met-no" &&
+                t("Основната метео услуга не отговаря; нивата са оценка по прогнозата на MET Norway. ", "The main weather service isn't answering; the levels are estimated from the MET Norway forecast. ")}
+              {danger.data?.approx === "backup" &&
+                t(`Метео услугите не отговарят; показваме запазените нива от ${agoLong(danger.data.backupFrom ?? danger.data.updated)}. `, `The weather services aren't answering; showing the saved levels from ${agoLong(danger.data.backupFrom ?? danger.data.updated)}. `)}
               {t(
                 "Нивото е изчислено за центъра на всяка област. В планините и по долините може да е различно, затова за точно място изберете го на „Днес“. Докоснете област за подробности.",
                 "The level is worked out for the centre of each oblast. It can differ in the mountains and valleys, so for an exact place choose it on Today. Tap an oblast for details.",
@@ -165,20 +170,13 @@ function Legend({ layer, hours, who }: { layer: Layer; hours?: number; who: stri
           </li>
           {HEAT.map((h, i) => (
             <li key={h.color} className={item}>
-              <FireIcon tier={i} age="day" color={h.color} size={12 + i * 2} />
+              <FireIcon tier={i} color={h.color} size={12 + i * 2} />
               {t(["слаба", "средна", "силна", "много силна"][i], ["weak", "medium", "strong", "very strong"][i])}
             </li>
           ))}
           <li className={item}>
-            <span className="relative grid size-4 place-items-center" aria-hidden>
-              <span className="fire-halo absolute inset-0 rounded-full bg-[var(--heat-3)]" />
-              <span className="size-2 rounded-full bg-[var(--heat-3)]" />
-            </span>
-            {t("пулсира: до 6 ч", "pulsing: under 6 h")}
-          </li>
-          <li className={item}>
-            <FireIcon tier={1} age="old" color="var(--heat-2)" size={16} />
-            {t("жарава: по-старо от 24 ч", "ember: older than 24 h")}
+            <FireIcon tier={1} pale color="var(--heat-2)" size={14} />
+            {t("бледо: не гори сега или не е сигурно", "pale: not burning now, or not sure")}
           </li>
           <li className={item}>
             <span className="size-3 rounded-full bg-[#1f6fd1]" aria-hidden />
@@ -208,12 +206,23 @@ function Legend({ layer, hours, who }: { layer: Layer; hours?: number; who: stri
           </li>
         ))}
       {layer === "burnt" && <li className={item}>{t("декара", "decares (0.1 ha)")}</li>}
-      <li className="ml-auto hidden sm:list-item">{t("Влачете и приближавайте", "Drag and zoom")}</li>
     </ul>
   );
 }
 
-function FiresSide({ loc, spots, onPick }: { loc: Loc; spots: ReturnType<typeof useSpots>; onPick: (s: Spot) => void }) {
+function FiresSide({
+  loc,
+  spots,
+  showAll,
+  setShowAll,
+  onPick,
+}: {
+  loc: Loc;
+  spots: ReturnType<typeof useSpots>;
+  showAll: boolean;
+  setShowAll: (v: boolean) => void;
+  onPick: (s: Spot) => void;
+}) {
   const [all, setAll] = useState(false);
   const { t, lang } = useI18n();
   const who = whoOf(loc, lang);
@@ -229,8 +238,11 @@ function FiresSide({ loc, spots, onPick }: { loc: Loc; spots: ReturnType<typeof 
             <span className="font-semibold text-ember">{firesWord(spots.near.length, lang)}</span> {t(`до ${NEAR_KM} км от ${who}.`, `within ${NEAR_KM} km of ${who}.`)}
           </>
         )}{" "}
-        <span className="text-muted">{t(`В страната: ${spots.all.length} за ${spots.data.hours} ч.`, `Across Bulgaria: ${spots.all.length} in ${spots.data.hours} h.`)}</span>
+        <span className="text-muted">
+          {t(`В страната: ${spots.all.length - (showAll ? spots.hidden : 0)} за ${spots.data.hours} ч.`, `Across Bulgaria: ${spots.all.length - (showAll ? spots.hidden : 0)} in ${spots.data.hours} h.`)}
+        </span>
       </p>
+      <DataNote data={spots.data} />
       {spots.all.length > 0 && (
         <div>
           <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card">
@@ -247,11 +259,29 @@ function FiresSide({ loc, spots, onPick }: { loc: Loc; spots: ReturnType<typeof 
           )}
         </div>
       )}
+      {spots.hidden > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-[20px] bg-card px-4 py-3">
+          <p className="text-[14px] leading-snug text-muted">
+            {showAll
+              ? t(
+                  `Показваме и ${spots.hidden} съмнителни: слаби сигнали и места с постоянна топлина (заводи, ТЕЦ). Те са бледи.`,
+                  `Also showing ${spots.hidden} doubtful ones: weak signals and spots with constant heat (factories, power plants). They are pale.`,
+                )
+              : t(
+                  `Скрихме ${spots.hidden}, които вероятно не са пожари: слаби сигнали и места с постоянна топлина (заводи, ТЕЦ).`,
+                  `We hid ${spots.hidden} that are probably not fires: weak signals and spots with constant heat (factories, power plants).`,
+                )}
+          </p>
+          <button onClick={() => setShowAll(!showAll)} aria-pressed={showAll} className="pressable hover-fill min-h-11 shrink-0 rounded-full px-3 text-[15px] font-medium text-accent">
+            {showAll ? t("Скрий", "Hide") : t("Покажи", "Show")}
+          </button>
+        </div>
+      )}
       <p className="flex gap-2 px-1 text-[13px] leading-snug text-muted">
         <Satellite size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" aria-hidden />
         {t(
-          "Спътниците VIIRS на NASA засичат силна топлина. Освен горски пожар може да е горящо стърнище, сметище или завод.",
-          "NASA's VIIRS satellites detect strong heat. Besides a forest fire it can be burning stubble, a landfill or a factory.",
+          "Пет спътника на NASA (VIIRS и MODIS) засичат силна топлина. Сравняваме засичанията помежду им и с последните две седмици, за да отсеем заводите и случайните сигнали. Освен горски пожар може да е горящо стърнище или сметище.",
+          "Five NASA satellites (VIIRS and MODIS) detect strong heat. We compare their detections with each other and with the past two weeks to weed out factories and stray signals. Besides a forest fire it can be burning stubble or a landfill.",
         )}
       </p>
     </>
@@ -325,4 +355,26 @@ function RegionInfo({
       </Link>
     </div>
   );
+}
+
+/** Says when the satellite data is a saved copy or incomplete, so nobody mistakes it for live. */
+function DataNote({ data }: { data: NonNullable<ReturnType<typeof useSpots>["data"]> }) {
+  const { t, agoLong } = useI18n();
+  const now = useNow();
+  if (data.backupFrom)
+    return (
+      <p className="rounded-2xl bg-[color-mix(in_oklab,var(--d-moderate)_18%,transparent)] px-4 py-3 text-[14px] leading-snug">
+        {t(
+          `NASA не отговаря в момента. Показваме последните запазени данни от ${agoLong(data.backupFrom)}.`,
+          `NASA isn't answering right now. Showing the last saved data, from ${agoLong(data.backupFrom)}.`,
+        )}
+      </p>
+    );
+  if (data.lastPass && now - Date.parse(data.lastPass) > 20 * 3600e3)
+    return (
+      <p className="px-1 text-[14px] leading-snug text-muted">
+        {t(`Последното преминаване на спътник с данни е ${agoLong(data.lastPass)}.`, `The latest satellite pass with data was ${agoLong(data.lastPass)}.`)}
+      </p>
+    );
+  return null;
 }

@@ -11,20 +11,69 @@ import type { Lang } from "@/i18n/lang";
 
 type GeoResult = { id: number; name: string; latitude: number; longitude: number; admin1?: string; admin2?: string; feature_code?: string };
 
-/** Any town or village in Bulgaria, via Open-Meteo's free geocoder (GeoNames data). */
+type PhotonFeature = {
+  geometry: { coordinates: [number, number] };
+  properties: { osm_id: number; name?: string; state?: string; county?: string; countrycode?: string; osm_key?: string };
+};
+
+async function openMeteo(query: string, lang: Lang): Promise<GeoResult[]> {
+  const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
+  url.search = new URLSearchParams({ name: query, count: "10", language: lang, countryCode: "BG", format: "json" }).toString();
+  const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  if (!r.ok) throw new Error(`geocoding ${r.status}`);
+  return ((await r.json()) as { results?: GeoResult[] }).results ?? [];
+}
+
+/** Backup geocoder: Photon (OpenStreetMap data, free, no key), limited to Bulgaria. */
+async function photon(query: string): Promise<GeoResult[]> {
+  const url = new URL("https://photon.komoot.io/api/");
+  url.search = new URLSearchParams({ q: query, limit: "15", bbox: "22.3,41.2,28.7,44.3" }).toString();
+  const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  if (!r.ok) throw new Error(`photon ${r.status}`);
+  const fs = ((await r.json()) as { features?: PhotonFeature[] }).features ?? [];
+  return fs
+    .filter((f) => f.properties.countrycode === "BG" && f.properties.name && f.properties.osm_key === "place")
+    .slice(0, 10)
+    .map((f) => ({
+      id: f.properties.osm_id,
+      name: f.properties.name!,
+      latitude: f.geometry.coordinates[1],
+      longitude: f.geometry.coordinates[0],
+      admin1: f.properties.state,
+      admin2: f.properties.county,
+    }));
+}
+
+/** Last resort with no network: the oblast capitals we ship with the app. */
+function local(query: string): GeoResult[] {
+  const q = query.trim().toLowerCase();
+  return PLACES.filter((p) => p.name.toLowerCase().includes(q) || placeName(p.name, "en").toLowerCase().includes(q)).map((p, i) => ({
+    id: -1 - i,
+    name: p.name,
+    latitude: p.lat,
+    longitude: p.lon,
+  }));
+}
+
+/** Any town or village in Bulgaria: Open-Meteo's geocoder, then Photon, then the built-in list. */
 function usePlaceSearch(q: string, lang: Lang) {
   const [res, setRes] = useState<{ q: string; items: GeoResult[] } | null>(null);
   const query = q.trim();
   useEffect(() => {
     if (query.length < 2) return;
     let alive = true;
-    const t = setTimeout(() => {
-      const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
-      url.search = new URLSearchParams({ name: query, count: "10", language: lang, countryCode: "BG", format: "json" }).toString();
-      fetch(url)
-        .then((r) => r.json())
-        .then((d: { results?: GeoResult[] }) => alive && setRes({ q: query, items: d.results ?? [] }))
-        .catch(() => alive && setRes({ q: query, items: [] }));
+    const t = setTimeout(async () => {
+      let items: GeoResult[] = [];
+      for (const find of [() => openMeteo(query, lang), () => photon(query)]) {
+        try {
+          items = await find();
+          break;
+        } catch {
+          // try the next one
+        }
+      }
+      if (items.length === 0) items = local(query);
+      if (alive) setRes({ q: query, items });
     }, 250);
     return () => {
       alive = false;
