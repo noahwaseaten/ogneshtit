@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Bell, BellOff, ChevronRight } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { Bell, BellOff, ChevronRight, X } from "lucide-react";
 import { useLocation } from "@/lib/client";
 import { oblastAt } from "@/lib/oblast";
 import type { Prefs } from "@/lib/alerts";
@@ -27,6 +27,33 @@ function readSaved(): Saved | null {
   } catch {
     return null;
   }
+}
+
+// The home page card can be hidden for good; the settings page always shows it.
+const HIDE = "ogneshtit:alerts-hidden";
+const hideListeners = new Set<() => void>();
+function readHidden() {
+  try {
+    return localStorage.getItem(HIDE) === "1";
+  } catch {
+    return false;
+  }
+}
+function hideCard() {
+  try {
+    localStorage.setItem(HIDE, "1");
+  } catch {}
+  hideListeners.forEach((l) => l());
+}
+function useHidden() {
+  return useSyncExternalStore(
+    (cb) => {
+      hideListeners.add(cb);
+      return () => hideListeners.delete(cb);
+    },
+    readHidden,
+    () => true,
+  );
 }
 
 type State = "loading" | "unsupported" | "needs-install" | "denied" | "off" | "on";
@@ -61,6 +88,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const hidden = useHidden();
 
   useEffect(() => {
     (async () => {
@@ -131,7 +159,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
     setNote(res.ok ? "Изпратихме пробно известие. Трябва да се появи до няколко секунди." : body.error ?? "Не успяхме да изпратим.");
   };
 
-  if (state === "loading" || state === "unsupported") return null;
+  if (state === "loading" || state === "unsupported" || (help && hidden)) return null;
   const here = place().label;
   const moved = state === "on" && saved && saved.label !== here;
 
@@ -142,7 +170,17 @@ export function Alerts({ help = false }: { help?: boolean }) {
           Известия
         </h2>
       )}
-      <div className="rounded-[20px] bg-card p-4">
+      <div className="relative rounded-[20px] bg-card p-4">
+        {help && (
+          <button
+            onClick={hideCard}
+            aria-label="Скрий от началната страница"
+            title="Скрий. Известията остават в „За ОгнеЩит“."
+            className="pressable absolute right-1.5 top-1.5 grid size-11 place-items-center rounded-full text-muted hover:bg-line/60"
+          >
+            <X size={18} strokeWidth={2} aria-hidden />
+          </button>
+        )}
         <div className="flex items-start gap-3">
           {state === "on" ? (
             <Bell size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-accent" aria-hidden />
@@ -150,7 +188,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
             <BellOff size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-muted" aria-hidden />
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[16px] font-semibold">{state === "on" ? `Известия за ${saved?.label ?? here}` : "Известия при опасност"}</p>
+            <p className={`text-[16px] font-semibold ${help ? "pr-8" : ""}`}>{state === "on" ? `Известия за ${saved?.label ?? here}` : "Известия при опасност"}</p>
             <p className="pt-0.5 text-[14px] leading-snug text-muted">
               {state === "needs-install"
                 ? "На iPhone известията работят, след като добавите ОгнеЩит на началния екран."

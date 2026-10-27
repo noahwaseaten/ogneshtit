@@ -144,6 +144,15 @@ p {
   }
 }
 
+/* Bars that grow from the bottom once, with a slight overshoot (Material 3 expressive spring). */
+.rise {
+  transform-origin: bottom;
+  transition: scale 520ms cubic-bezier(0.34, 1.36, 0.4, 1);
+  @starting-style {
+    scale: 1 0.2;
+  }
+}
+
 .skeleton {
   background: linear-gradient(90deg, var(--line), transparent, var(--line));
   background-size: 200% 100%;
@@ -167,6 +176,9 @@ p {
   }
   .skeleton {
     animation: none;
+  }
+  .rise {
+    transition: none;
   }
 }
 
