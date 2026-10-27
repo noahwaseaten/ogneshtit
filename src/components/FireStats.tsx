@@ -106,8 +106,8 @@ export function FireStats() {
               setYear(y);
               setRegion(null);
             }}
-            className={`pressable min-h-11 shrink-0 rounded-full px-4 text-[15px] font-semibold tabular-nums transition-colors duration-150 ${
-              y === year ? "bg-tonal text-content" : "bg-card text-content hover:bg-line"
+            className={`pressable hover-fill min-h-11 shrink-0 rounded-full px-4 text-[15px] font-semibold tabular-nums ${
+              y === year ? "bg-tonal text-content" : "bg-card text-content"
             }`}
           >
             {y}
@@ -342,7 +342,7 @@ function Ranking({
             <button
               onClick={() => onPick(r.name)}
               aria-pressed={selected === r.name}
-              className={`flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-line/50 active:bg-line ${selected === r.name ? "bg-line/60" : ""}`}
+              className={`hover-fill flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left ${selected === r.name ? "bg-line/60" : ""}`}
             >
               <span className="w-5 shrink-0 text-[14px] font-semibold tabular-nums text-muted">{i + 1}</span>
               <span className="min-w-0 flex-1">

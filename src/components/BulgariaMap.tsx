@@ -587,7 +587,7 @@ export function BulgariaMap({
                 onClick={() => animateTo(zoomBy(2))}
                 disabled={zoom >= MAX_ZOOM}
                 aria-label={t("Приближи", "Zoom in")}
-                className="grid h-11 place-items-center transition-colors duration-150 hover:bg-line/60 disabled:opacity-35"
+                className="hover-fill grid h-11 place-items-center disabled:opacity-35"
               >
                 <Plus size={18} strokeWidth={2} aria-hidden />
               </button>
@@ -596,7 +596,7 @@ export function BulgariaMap({
                 onClick={() => animateTo(zoomBy(0.5))}
                 disabled={zoom <= 1.01}
                 aria-label={t("Отдалечи", "Zoom out")}
-                className="grid h-11 place-items-center transition-colors duration-150 hover:bg-line/60 disabled:opacity-35"
+                className="hover-fill grid h-11 place-items-center disabled:opacity-35"
               >
                 <Minus size={18} strokeWidth={2} aria-hidden />
               </button>

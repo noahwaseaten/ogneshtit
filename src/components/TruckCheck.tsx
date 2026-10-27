@@ -100,7 +100,7 @@ export function TruckCheck() {
                     <li key={p.plate}>
                       <button
                         onClick={() => setChosen(p.plate)}
-                        className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-line/50 active:bg-line"
+                        className="hover-fill flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2 text-left"
                       >
                         <span>
                           <span className="block font-display text-[18px] font-semibold tracking-wide">{pretty(p.plate)}</span>
@@ -153,7 +153,7 @@ function PlateResult({ plate, tickets, onOpen }: { plate: string; tickets: Ticke
         <ul className="mt-1.5 divide-y divide-line overflow-hidden rounded-2xl bg-surface">
           {tickets.slice(0, 4).map((tk) => (
             <li key={tk.id}>
-              <button onClick={() => onOpen(tk)} className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-line/50 active:bg-line">
+              <button onClick={() => onOpen(tk)} className="hover-fill flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2 text-left">
                 <span className="min-w-0">
                   <span className="block text-[16px] font-medium tabular-nums">
                     {when(tk.issued)}

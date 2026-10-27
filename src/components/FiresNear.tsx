@@ -191,7 +191,7 @@ export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | nul
           </p>
         </>
       ) : (
-        <ul className="-mx-2 divide-y divide-line">
+        <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface">
           {spots?.map((s) => (
             <li key={s.id}>
               <SpotRow s={s} onClick={() => onPick(s)} />
@@ -206,7 +206,7 @@ export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | nul
 export function SpotRow({ s, onClick }: { s: Spot; onClick: () => void }) {
   const { t, lang, agoLong } = useI18n();
   return (
-    <button onClick={onClick} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-line/50 active:bg-line">
+    <button onClick={onClick} className="hover-fill flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left">
       <span className="size-3 shrink-0 rounded-full" style={{ background: heatColor(s.frp), opacity: isOld(s.time) ? 0.5 : 1 }} aria-hidden />
       <span className="min-w-0 flex-1">
         <span className="block text-[16px] font-medium tabular-nums">

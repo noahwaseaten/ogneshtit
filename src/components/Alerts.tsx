@@ -168,7 +168,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
             onClick={hideCard}
             aria-label={t("Скрий от началната страница", "Hide from the home screen")}
             title={t("Скрий. Известията остават в Настройки.", "Hide. Alerts stay in Settings.")}
-            className="pressable absolute right-1.5 top-1.5 grid size-11 place-items-center rounded-full text-muted hover:bg-line/60"
+            className="pressable hover-fill absolute right-1.5 top-1.5 grid size-11 place-items-center rounded-full text-muted"
           >
             <X size={18} strokeWidth={2} aria-hidden />
           </button>
@@ -263,7 +263,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
               </button>
             )}
             {!help && (
-              <button onClick={disable} disabled={busy} className="pressable min-h-11 rounded-full px-4 text-[15px] font-medium text-muted hover:bg-line/60 disabled:opacity-60">
+              <button onClick={disable} disabled={busy} className="pressable hover-fill min-h-11 rounded-full px-4 text-[15px] font-medium text-muted disabled:opacity-60">
                 {t("Изключи", "Turn off")}
               </button>
             )}

@@ -134,12 +134,33 @@ p {
   text-wrap: pretty;
 }
 
+/* Hover and press tint, the same everywhere. Drawn as an inset shadow so it sits on top of whatever
+   background the element already has (cards, chips, selected states) and follows its exact radius.
+   Rows inside a grouped card fill edge to edge and the card (overflow-hidden) clips the corners;
+   rows in a sheet use -mx-3 px-3 rounded-xl so the tint is concentric with the sheet's padding. */
+:root {
+  --hover: color-mix(in oklab, var(--content) 8%, transparent);
+  --press: color-mix(in oklab, var(--content) 13%, transparent);
+}
+
 /* Press feedback for anything tappable. */
 .pressable {
   transition: scale 160ms var(--ease-out), background-color 150ms ease, color 150ms ease;
 }
 .pressable:active {
   scale: 0.96;
+}
+
+.hover-fill {
+  transition: box-shadow 150ms ease, scale 160ms var(--ease-out), color 150ms ease, background-color 150ms ease;
+}
+@media (hover: hover) {
+  .hover-fill:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 100vmax var(--hover);
+  }
+}
+.hover-fill:active:not(:disabled) {
+  box-shadow: inset 0 0 0 100vmax var(--press);
 }
 
 :focus-visible {

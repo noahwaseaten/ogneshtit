@@ -94,7 +94,7 @@ export default async function Pomogni({ params }: Props) {
           <ul className="divide-y divide-line">
             {actions.map(({ href, Icon, title, text }) => (
               <li key={href}>
-                <Link href={href} className="flex min-h-20 items-center gap-4 px-5 py-4 hover:bg-line/40 active:bg-line">
+                <Link href={href} className="hover-fill flex min-h-20 items-center gap-4 px-5 py-4">
                   <Icon size={24} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className="block text-[17px] font-semibold leading-tight">{title}</span>

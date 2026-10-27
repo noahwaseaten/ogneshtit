@@ -225,7 +225,7 @@ function FiresSide({ loc, spots, onPick }: { loc: Loc; spots: ReturnType<typeof 
       </p>
       {spots.all.length > 0 && (
         <div>
-          <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card px-2">
+          <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card">
             {list.map((s) => (
               <li key={s.id}>
                 <SpotRow s={s} onClick={() => onPick(s)} />

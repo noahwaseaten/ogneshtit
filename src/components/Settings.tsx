@@ -66,7 +66,7 @@ export function SettingsRow({
       <div className={rowCls}>{main}</div>
     );
 
-  const linkCls = `${rowCls} transition-colors duration-150 hover:bg-line/40 active:bg-line`;
+  const linkCls = `${rowCls} hover-fill`;
   if (external || href.startsWith("tel:"))
     return (
       <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined} className={linkCls}>

@@ -58,7 +58,7 @@ export function LocationPicker() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="pressable -ml-2 inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full px-2 text-[16px] font-semibold text-content hover:bg-line/60"
+        className="pressable hover-fill -ml-3 inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full px-3 text-[16px] font-semibold text-content"
         aria-label={t(`Място: ${here}. Смени`, `Place: ${here}. Change`)}
       >
         {loc.source === "gps" ? <LocateFixed size={18} strokeWidth={2} aria-hidden /> : <MapPin size={18} strokeWidth={2} aria-hidden />}
@@ -104,12 +104,12 @@ export function LocationPicker() {
           <div aria-live="polite" className="pt-2">
             {search.loading && <p className="px-1 py-3 text-[15px] text-muted">{t("Търсим…", "Searching…")}</p>}
             {search.items?.length === 0 && <p className="px-1 py-3 text-[15px] text-muted">{t("Не намерихме такова място в България.", "We couldn't find that place in Bulgaria.")}</p>}
-            <ul className="-mx-2">
+            <ul className="-mx-3">
               {search.items?.map((r) => (
                 <li key={r.id}>
                   <button
                     onClick={() => pick({ lat: r.latitude, lon: r.longitude, label: r.name, source: "place", region: r.admin1 })}
-                    className="flex min-h-12 w-full flex-col justify-center rounded-xl px-3 py-2 text-left hover:bg-line/50 active:bg-line"
+                    className="hover-fill flex min-h-12 w-full flex-col justify-center rounded-xl px-3 py-2 text-left"
                   >
                     <span className="text-[16px] font-medium">{r.name}</span>
                     <span className="text-[13px] text-muted">{[r.admin2, r.admin1].filter(Boolean).join(", ")}</span>
@@ -121,14 +121,14 @@ export function LocationPicker() {
         ) : (
           <>
             <p className="px-1 pb-1 pt-5 text-[14px] font-medium text-muted">{t("Областни градове", "Oblast capitals")}</p>
-            <ul className="-mx-2 grid grid-cols-1 sm:grid-cols-2">
+            <ul className="-mx-3 grid grid-cols-1 sm:grid-cols-2">
               {PLACES.map((p) => {
                 const selected = loc.source === "place" && loc.label === p.name;
                 return (
                   <li key={p.name}>
                     <button
                       onClick={() => pick({ ...p, label: p.name, source: "place" })}
-                      className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-left text-[16px] hover:bg-line/50 active:bg-line"
+                      className="hover-fill flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-left text-[16px]"
                     >
                       {placeName(p.name, lang)}
                       {selected && <Check size={20} strokeWidth={2} className="text-accent" aria-label={t("Избрано", "Selected")} />}

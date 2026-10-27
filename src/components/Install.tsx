@@ -52,7 +52,7 @@ export function InstallButton({ compact }: { compact?: boolean }) {
   const { t } = useI18n();
   if (!canPrompt) return null;
   return compact ? (
-    <button onClick={install} aria-label={t("Инсталирай приложението", "Install the app")} className="pressable grid size-11 place-items-center rounded-full text-accent hover:bg-line/60">
+    <button onClick={install} aria-label={t("Инсталирай приложението", "Install the app")} className="pressable hover-fill grid size-11 place-items-center rounded-full text-accent">
       <Download size={21} strokeWidth={2} aria-hidden />
     </button>
   ) : (

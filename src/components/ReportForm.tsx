@@ -156,8 +156,8 @@ export function ReportForm() {
           {KINDS.map((k, i) => (
             <label
               key={k[0]}
-              className={`pressable inline-flex min-h-11 cursor-pointer items-center rounded-full border px-3.5 text-[15px] font-medium transition-colors duration-150 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
-                kindIx === i ? "border-content bg-content text-surface" : "border-line hover:bg-line/50"
+              className={`pressable inline-flex min-h-11 cursor-pointer items-center rounded-full border px-3.5 text-[15px] font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
+                kindIx === i ? "border-content bg-content text-surface" : "hover-fill border-line"
               }`}
             >
               <input type="radio" name="kind" value={k[0]} checked={kindIx === i} onChange={() => setKindIx(i)} className="sr-only" />
@@ -177,7 +177,7 @@ export function ReportForm() {
               </p>
               <p className="text-[13px] text-muted tabular-nums">{t(`Точност около ${Math.round(pos.acc)} м`, `Accurate to about ${Math.round(pos.acc)} m`)}</p>
             </div>
-            <button onClick={() => setPos(null)} className="pressable grid size-11 shrink-0 place-items-center rounded-full hover:bg-line" aria-label={t("Махни координатите", "Remove the coordinates")}>
+            <button onClick={() => setPos(null)} className="pressable hover-fill grid size-11 shrink-0 place-items-center rounded-full" aria-label={t("Махни координатите", "Remove the coordinates")}>
               <X size={18} strokeWidth={2} aria-hidden />
             </button>
           </div>
@@ -266,7 +266,7 @@ export function ReportForm() {
         {rdgs ? (
           <button
             onClick={() => setPicking(true)}
-            className="pressable -mx-2 mt-0.5 flex min-h-11 w-[calc(100%+1rem)] items-center justify-between gap-2 rounded-xl px-2 text-left text-[17px] font-semibold hover:bg-line/50"
+            className="pressable hover-fill -mx-3 mt-0.5 flex min-h-11 w-[calc(100%+1.5rem)] items-center justify-between gap-2 rounded-xl px-3 text-left text-[17px] font-semibold"
           >
             <span className="truncate">{rdg ? placeName(rdg.name, lang) : t("Изберете регионална дирекция", "Choose a regional directorate")}</span>
             <ChevronDown size={18} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
@@ -281,7 +281,7 @@ export function ReportForm() {
           title={t("Регионална дирекция по горите", "Regional forest directorate")}
           description={t("Сигналът отива до дирекцията, в чийто район е мястото.", "The report goes to the directorate whose area the place is in.")}
         >
-          <ul className="-mx-2">
+          <ul className="-mx-3">
             {rdgs?.map((r) => (
               <li key={r.id}>
                 <button
@@ -289,7 +289,7 @@ export function ReportForm() {
                     setRdgId(r.id);
                     setPicking(false);
                   }}
-                  className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-3 text-left hover:bg-line/50 active:bg-line"
+                  className="hover-fill flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-3 text-left"
                 >
                   <span className="min-w-0">
                     <span className="block text-[16px] font-medium">{placeName(r.name, lang)}</span>

@@ -43,7 +43,7 @@ export function Sheet({
               {description && <Drawer.Description className="pt-1 text-[15px] leading-snug text-muted">{description}</Drawer.Description>}
             </div>
             <Drawer.Close
-              className="pressable -mr-2 -mt-1 grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-line"
+              className="pressable hover-fill -mr-2 -mt-1 grid size-11 shrink-0 place-items-center rounded-full text-muted"
               aria-label={t("Затвори", "Close")}
             >
               <X size={20} strokeWidth={2} aria-hidden />

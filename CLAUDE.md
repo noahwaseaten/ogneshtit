@@ -53,6 +53,8 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
   `.pressable` (scale .96 on press), tabular numbers for data, concentric radii, shadows for elevation and borders
   for structure, no `transition: all`, icon swaps via `.swap`, colour never the only signal, contrast ≥ 4.5:1,
   `prefers-reduced-motion` respected.
+- Hover and press: always the `hover-fill` class (globals.css), never ad-hoc `hover:bg-*`. Rows in a grouped card are
+  edge to edge (`px-4`, no radius) and the card has `overflow-hidden`; rows in a sheet use `-mx-3 px-3 rounded-xl`.
 - Satellite fires are coloured by heat (FRP: `--heat-1..4`, `HEAT` in FiresNear); fires older than 24 h are faded. Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
 
 ## Languages (Bulgarian and English)
