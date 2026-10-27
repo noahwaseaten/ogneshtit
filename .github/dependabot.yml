@@ -8,6 +8,12 @@ updates:
       time: "07:00"
       timezone: Europe/Sofia
     open-pull-requests-limit: 5
+    ignore:
+      # Node types follow the runtime (Node 22/24 on Vercel), and ESLint majors wait for eslint-config-next.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
     groups:
       next-react:
         patterns: ["next", "eslint-config-next", "react", "react-dom", "@types/react", "@types/react-dom"]

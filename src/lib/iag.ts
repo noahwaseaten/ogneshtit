@@ -186,7 +186,12 @@ export async function searchTickets(input: string): Promise<TicketSearch> {
   // filter by the full plate ourselves, ignoring Cyrillic/Latin differences.
   const digits = q.replace(/\D/g, "");
   const text = digits.length >= 2 ? digits : q;
-  const [veh, trl] = await Promise.all([searchBy(2, text), searchBy(3, text)]);
+  // Trailer search is a bonus: if it fails, the vehicle search alone still answers.
+  const [vehR, trlR] = await Promise.allSettled([searchBy(2, text), searchBy(3, text)]);
+  if (vehR.status === "rejected") throw vehR.reason;
+  if (trlR.status === "rejected") console.error("ИАГ trailer search failed", trlR.reason);
+  const veh = vehR.value;
+  const trl = trlR.status === "fulfilled" ? trlR.value : { records: [], count: 0 };
   const now = Date.now();
   const byPlate = new Map<string, Map<number, TicketSummary>>();
   const add = (plate: string, r: RawTicket) => {

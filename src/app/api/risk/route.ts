@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
   const r = (x: number) => Math.round(x * 100) / 100;
   try {
     return Response.json(await getRisk(r(lat), r(lon)));
-  } catch {
+  } catch (e) {
+    console.error("risk failed", e);
     return Response.json({ error: "Метеоданните не са достъпни в момента." }, { status: 502 });
   }
 }

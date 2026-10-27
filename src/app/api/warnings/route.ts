@@ -5,7 +5,8 @@ export async function GET() {
   await connection();
   try {
     return Response.json(await getWarnings());
-  } catch {
+  } catch (e) {
+    console.error("warnings failed", e);
     return Response.json({ error: "Предупрежденията на НИМХ не са достъпни." }, { status: 502 });
   }
 }

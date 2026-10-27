@@ -9,7 +9,8 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ticket/[type]/[
   }
   try {
     return Response.json(await getTicket(type, id));
-  } catch {
+  } catch (e) {
+    console.error("ticket detail failed", e);
     return Response.json({ error: "Не успяхме да заредим билета от ИАГ." }, { status: 502 });
   }
 }

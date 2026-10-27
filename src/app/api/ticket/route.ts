@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
   }
   try {
     return Response.json(await searchTickets(plate));
-  } catch {
+  } catch (e) {
+    console.error("ticket search failed", e);
     return Response.json({ error: "Регистърът на ИАГ не отговаря в момента. Опитайте след минута." }, { status: 502 });
   }
 }

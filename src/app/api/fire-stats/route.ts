@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
   }
   try {
     return Response.json(await getFireStats(year));
-  } catch {
+  } catch (e) {
+    console.error("fire stats failed", e);
     return Response.json({ error: "Регистърът на ИАГ не отговаря в момента." }, { status: 502 });
   }
 }
