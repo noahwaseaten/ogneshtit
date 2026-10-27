@@ -1,11 +1,11 @@
-// Canadian Forest Fire Weather Index (FWI) System — Van Wagner (1987) equations.
+// Canadian Forest Fire Weather Index (FWI) System: Van Wagner (1987) equations.
 // This is the same index EFFIS uses for its European fire danger forecast.
 // Inputs are noon (local standard time) weather: temperature °C, relative humidity %,
 // 10 m wind speed km/h, and rain mm over the previous 24 hours.
 
 export type DailyWeather = {
   date: string; // YYYY-MM-DD
-  month: number; // 1–12
+  month: number; // 1 to 12
   temp: number;
   rh: number;
   wind: number;
@@ -20,7 +20,7 @@ export type FwiDay = DailyWeather &
 // Standard startup values when no previous codes are known (spring start).
 export const STARTUP: Codes = { ffmc: 85, dmc: 6, dc: 15 };
 
-// Day-length factors for latitudes > 30°N (Bulgaria is 41–44°N).
+// Day-length factors for latitudes > 30°N (Bulgaria is 41 to 44°N).
 const DMC_EL = [6.5, 7.5, 9.0, 12.8, 13.9, 13.9, 12.4, 10.9, 9.4, 8.0, 7.0, 6.0];
 const DC_FL = [-1.6, -1.6, -1.6, 0.9, 3.8, 5.8, 6.4, 5.0, 2.4, 0.4, -1.6, -1.6];
 

@@ -1,4 +1,4 @@
-// Oblast centres — used when the person prefers not to share GPS.
+// Oblast centres: quick picks when the person prefers not to share GPS.
 export type Place = { name: string; lat: number; lon: number };
 
 export const PLACES: Place[] = [

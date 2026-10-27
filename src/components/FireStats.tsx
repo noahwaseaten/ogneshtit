@@ -1,0 +1,416 @@
+"use client";
+
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { RotateCw, ExternalLink } from "lucide-react";
+import { OBLASTS } from "@/data/oblasts";
+import { nf, sofiaTime, useJson, useMedia } from "@/lib/client";
+import type { FireHistory, FireStats as Stats, Share } from "@/lib/iag";
+import { BulgariaMap } from "./BulgariaMap";
+import { Sheet } from "./Sheet";
+
+// Burnt area classes in decares (1 дка = 1000 m²). Fixed, so years can be compared by colour.
+const BINS = [
+  { max: 0, color: "var(--land)", label: "Без пожари" },
+  { max: 100, color: "#f6d2bd", label: "до 100 дка" },
+  { max: 500, color: "#efa37c", label: "100 до 500" },
+  { max: 2000, color: "#e3741b", label: "500 до 2 000" },
+  { max: 5000, color: "#c7361f", label: "2 000 до 5 000" },
+  { max: Infinity, color: "#7d1810", label: "над 5 000" },
+];
+const binFor = (dka: number) => BINS.find((b) => dka <= b.max) ?? BINS[BINS.length - 1];
+
+const CAUSE_NOTE: Record<string, string> = {
+  Небрежност: "Палене на стърнища и сухи треви, непогасен огън, фас",
+  Умишлени: "Палежи",
+  Естествени: "Най-често мълния",
+  Неизвестни: "Причината не е установена",
+};
+
+const thisYear = () => Number(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia", year: "numeric" }).format(new Date()));
+const noop = () => () => {};
+const fires = (n: number) => (n === 1 ? "1 пожар" : `${nf(n)} пожара`);
+const dkaText = (dka: number) => `${nf(dka)} дка`;
+const haText = (dka: number) => `${nf(dka / 10)} ха`;
+
+export function FireStats() {
+  // The current year is read on the device, so a page prerendered last year never shows stale choices.
+  const now = useSyncExternalStore(noop, thisYear, () => 0);
+  const [picked, setYear] = useState<number | null>(null);
+  const year = picked ?? now;
+  const [region, setRegion] = useState<string | null>(null);
+  const wide = useMedia("(min-width: 1024px)");
+  const stats = useJson<Stats>(year ? `/api/fire-stats?year=${year}` : null);
+  const history = useJson<FireHistory>("/api/fire-history");
+  const years = useMemo(() => (now ? Array.from({ length: now - 2007 + 1 }, (_, i) => now - i) : []), [now]);
+
+  const s = stats.data;
+  const byName = useMemo(() => new Map((s?.regions ?? []).map((r) => [r.name, r])), [s]);
+  const ranked = useMemo(() => [...(s?.regions ?? [])].sort((a, b) => b.dka - a.dka), [s]);
+  const nameOf = (code: string) => OBLASTS.find((o) => o.code === code)?.name ?? "";
+  const selectedCode = region ? OBLASTS.find((o) => o.name === region)?.code ?? null : null;
+  const partial = s && s.to !== `${s.year}-12-31`;
+
+  return (
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-col gap-2 px-1 pt-2">
+        <h1 className="font-display text-[32px] font-bold leading-tight tracking-[-0.01em] lg:text-[40px]">Горски пожари по области</h1>
+        <p className="max-w-[60ch] text-[16px] leading-snug text-muted">
+          Официалните данни на Изпълнителната агенция по горите за пожарите в горските територии. Изберете година и
+          докоснете област, за да видите подробности.
+        </p>
+      </header>
+
+      {/* Year picker: a scrolling row of chips, newest first. */}
+      <div role="radiogroup" aria-label="Година" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0">
+        {years.map((y) => (
+          <button
+            key={y}
+            role="radio"
+            aria-checked={y === year}
+            onClick={() => {
+              setYear(y);
+              setRegion(null);
+            }}
+            className={`pressable min-h-11 shrink-0 rounded-full px-4 text-[15px] font-semibold tabular-nums transition-colors duration-150 ${
+              y === year ? "bg-content text-surface" : "bg-card text-content shadow-[var(--shadow)] hover:bg-line"
+            }`}
+          >
+            {y}
+          </button>
+        ))}
+      </div>
+
+      {!s && (stats.loading || !year) && <div className="skeleton h-[520px] rounded-[28px]" aria-label="Зареждаме данните" />}
+      {!s && year > 0 && !stats.loading && (
+        <div className="rounded-[20px] bg-card p-5 shadow-[var(--shadow)]">
+          <p className="text-[15px]">{stats.error}</p>
+          <button
+            onClick={stats.retry}
+            className="pressable mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-4 text-[15px] font-semibold text-accent-content"
+          >
+            <RotateCw size={18} strokeWidth={2} aria-hidden />
+            Опитай пак
+          </button>
+        </div>
+      )}
+
+      {s && (
+        <>
+          <section aria-label="Обобщение" className="enter">
+            <p className="px-1 text-[18px] leading-snug lg:text-[20px]">
+              {partial ? (
+                <>
+                  От началото на {s.year} г. до {sofiaTime(`${s.to}T12:00:00Z`, { day: "numeric", month: "long" })}{" "}
+                </>
+              ) : (
+                <>През {s.year} г. </>
+              )}
+              в горите на България е имало <strong className="font-semibold">{fires(s.total.fires)}</strong>. Изгоряли са{" "}
+              <strong className="font-semibold">{dkaText(s.total.dka)}</strong> ({haText(s.total.dka)}).
+            </p>
+            <dl className="mt-4 grid grid-cols-3 gap-2 lg:gap-3">
+              <Tile label="Пожари" value={nf(s.total.fires)} />
+              <Tile label="Изгоряла площ" value={nf(s.total.dka)} unit="дка" />
+              <Tile label="От тях върхов пожар" value={nf(s.total.crownDka)} unit="дка" hint="Огънят минава по короните на дърветата и унищожава гората." />
+            </dl>
+          </section>
+
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-10">
+            <section aria-labelledby="map-title" className="enter min-w-0">
+              <h2 id="map-title" className="px-1 font-display text-[20px] font-semibold">
+                Изгоряла площ по области
+              </h2>
+              <div className="mt-3 overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
+                <div className="p-2 pt-3 lg:p-4">
+                  <BulgariaMap
+                    ariaLabel={`Карта на областите, оцветени по изгоряла площ през ${s.year} г.`}
+                    fill={(code) => binFor(byName.get(nameOf(code))?.dka ?? 0).color}
+                    regionName={(code) => {
+                      const r = byName.get(nameOf(code));
+                      return `${nameOf(code)}: ${r ? `${fires(r.fires)}, ${dkaText(r.dka)}` : "без пожари"}`;
+                    }}
+                    selected={selectedCode}
+                    onRegion={(code) => setRegion(nameOf(code))}
+                    cities={false}
+                  />
+                </div>
+                <ul className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line px-4 py-3 text-[13px] text-muted" aria-label="Легенда, изгоряла площ">
+                  {BINS.map((b) => (
+                    <li key={b.label} className="inline-flex items-center gap-1.5 tabular-nums">
+                      <span className="size-3 rounded-[4px] shadow-[inset_0_0_0_1px_var(--land-line)]" style={{ background: b.color }} aria-hidden />
+                      {b.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+
+            {/* On wide screens the details sit next to the map instead of in a sheet. */}
+            <div className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-8">
+              {wide && (
+                <section aria-live="polite" className="rounded-[20px] bg-card p-5 shadow-[var(--shadow)]">
+                  {region ? (
+                    <RegionDetail name={region} stats={s} history={history.data} />
+                  ) : (
+                    <p className="text-[15px] leading-snug text-muted">Изберете област на картата или в списъка, за да видите подробности.</p>
+                  )}
+                </section>
+              )}
+              <Ranking ranked={ranked} total={s.total.dka} onPick={setRegion} selected={region} />
+            </div>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3 lg:gap-6">
+            <Bars title="Защо горят" unit="пожара" data={s.causes} notes={CAUSE_NOTE} />
+            <Bars title="Какво изгоря" unit="дка" data={s.vegetation} />
+            <Bars title="Чии са горите" unit="дка" data={s.ownership} />
+          </div>
+
+          <History data={history.data} loading={history.loading} year={year} onYear={(y) => (setYear(y), setRegion(null))} />
+
+          <p className="px-1 text-[13px] leading-snug text-muted">
+            Източник:{" "}
+            <a href="https://www.iag.bg/fires/lang/1/index" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline underline-offset-2">
+              ИАГ, Горски пожари по области
+              <ExternalLink size={12} strokeWidth={2} aria-hidden />
+            </a>
+            . Броят се само пожарите в горските територии. Европейската система EFFIS засича от спътник всички изгорели
+            площи над 30 ха, затова нейните числа са по-големи.
+          </p>
+
+          {!wide && (
+            <Sheet open={!!region} onClose={() => setRegion(null)} title={region ?? ""} description={`Горски пожари през ${s.year} г.`}>
+              {region && <RegionDetail name={region} stats={s} history={history.data} bare />}
+            </Sheet>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Tile({ label, value, unit, hint }: { label: string; value: string; unit?: string; hint?: string }) {
+  return (
+    <div className="flex flex-col gap-1.5 rounded-2xl bg-card p-3 shadow-[var(--shadow)] lg:p-4">
+      <dt className="text-[13px] font-medium leading-tight text-muted">{label}</dt>
+      <dd className="font-display text-[22px] font-bold leading-none tabular-nums lg:text-[28px]">
+        {value}
+        {unit && <span className="pl-1 text-[13px] font-semibold text-muted">{unit}</span>}
+      </dd>
+      {hint && <p className="hidden text-[12px] leading-snug text-muted sm:block">{hint}</p>}
+    </div>
+  );
+}
+
+function RegionDetail({ name, stats, history, bare }: { name: string; stats: Stats; history: FireHistory | null; bare?: boolean }) {
+  const r = stats.regions.find((x) => x.name === name);
+  const rank = [...stats.regions].sort((a, b) => b.dka - a.dka).findIndex((x) => x.name === name) + 1;
+  const series = history?.regions[name];
+  const max = series ? Math.max(1, ...series) : 1;
+  return (
+    <div>
+      {!bare && (
+        <>
+          <h3 className="font-display text-[22px] font-semibold">{name}</h3>
+          <p className="text-[15px] text-muted">Горски пожари през {stats.year} г.</p>
+        </>
+      )}
+      {r ? (
+        <dl className={`grid grid-cols-2 gap-x-4 gap-y-4 text-[15px] tabular-nums ${bare ? "" : "pt-4"}`}>
+          <div>
+            <dt className="text-[13px] text-muted">Пожари</dt>
+            <dd className="font-display text-[24px] font-bold">{nf(r.fires)}</dd>
+          </div>
+          <div>
+            <dt className="text-[13px] text-muted">Изгоряла площ</dt>
+            <dd className="font-display text-[24px] font-bold">
+              {nf(r.dka)} <span className="text-[14px] font-semibold text-muted">дка</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[13px] text-muted">Място в страната</dt>
+            <dd className="font-medium">
+              {rank}. от 28 по площ
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[13px] text-muted">Върхов пожар</dt>
+            <dd className="font-medium">{dkaText(r.crownDka)}</dd>
+          </div>
+        </dl>
+      ) : (
+        <p className={`text-[16px] ${bare ? "" : "pt-4"}`}>Няма регистрирани горски пожари.</p>
+      )}
+      {series && history && (
+        <div className="pt-6">
+          <p className="text-[13px] font-medium text-muted">Изгоряла площ по години, дка</p>
+          <div className="mt-2 flex h-24 items-end gap-[3px]" role="img" aria-label={`Изгоряла площ в област ${name} по години`}>
+            {series.map((v, i) => (
+              <span
+                key={history.years[i].year}
+                className="flex-1 rounded-t-[3px]"
+                style={{
+                  height: `${Math.max(2, (v / max) * 100)}%`,
+                  background: history.years[i].year === stats.year ? "var(--ember)" : "var(--line)",
+                }}
+                title={`${history.years[i].year}: ${dkaText(v)}`}
+              />
+            ))}
+          </div>
+          <div className="flex justify-between pt-1 text-[12px] tabular-nums text-muted">
+            <span>{history.years[0].year}</span>
+            <span>{history.years[history.years.length - 1].year}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Ranking({
+  ranked,
+  total,
+  onPick,
+  selected,
+}: {
+  ranked: Stats["regions"];
+  total: number;
+  onPick: (n: string) => void;
+  selected: string | null;
+}) {
+  const [all, setAll] = useState(false);
+  const list = all ? ranked : ranked.slice(0, 6);
+  const max = Math.max(1, ranked[0]?.dka ?? 1);
+  return (
+    <section aria-labelledby="rank-title">
+      <h2 id="rank-title" className="px-1 font-display text-[20px] font-semibold">
+        Най-засегнати области
+      </h2>
+      <ol className="mt-3 divide-y divide-line overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
+        {list.map((r, i) => (
+          <li key={r.name}>
+            <button
+              onClick={() => onPick(r.name)}
+              aria-pressed={selected === r.name}
+              className={`flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-line/50 active:bg-line ${selected === r.name ? "bg-line/60" : ""}`}
+            >
+              <span className="w-5 shrink-0 text-[14px] font-semibold tabular-nums text-muted">{i + 1}</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-[16px] font-medium">{r.name}</span>
+                  <span className="shrink-0 text-[14px] tabular-nums text-muted">{dkaText(r.dka)}</span>
+                </span>
+                <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-line" aria-hidden>
+                  <span className="block h-full rounded-full" style={{ width: `${(r.dka / max) * 100}%`, background: binFor(r.dka).color }} />
+                </span>
+                <span className="sr-only">
+                  {fires(r.fires)}, {total ? Math.round((r.dka / total) * 100) : 0}% от изгорялата площ
+                </span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      {ranked.length > 6 && (
+        <button onClick={() => setAll((v) => !v)} aria-expanded={all} className="pressable mt-2 min-h-11 px-1 text-[15px] font-medium text-accent">
+          {all ? "Покажи по-малко" : `Покажи всички ${ranked.length}`}
+        </button>
+      )}
+    </section>
+  );
+}
+
+function Bars({ title, unit, data, notes }: { title: string; unit: string; data: Share[]; notes?: Record<string, string> }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (!total) return null;
+  const sorted = [...data].sort((a, b) => b.value - a.value);
+  return (
+    <section aria-label={title} className="enter">
+      <h2 className="px-1 font-display text-[20px] font-semibold">{title}</h2>
+      <ul className="mt-3 flex flex-col gap-4 rounded-[20px] bg-card p-4 shadow-[var(--shadow)]">
+        {sorted.map((d) => {
+          const pct = Math.round((d.value / total) * 100);
+          return (
+            <li key={d.label}>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[15px] font-medium leading-tight first-letter:uppercase">{d.label}</span>
+                <span className="shrink-0 text-[15px] font-semibold tabular-nums">{pct}%</span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-line" aria-hidden>
+                <div className="h-full rounded-full bg-[var(--ember)]" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="pt-1 text-[13px] leading-snug text-muted tabular-nums">
+                {notes?.[d.label] ? `${notes[d.label]} · ` : ""}
+                {nf(d.value)} {unit}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function History({ data, loading, year, onYear }: { data: FireHistory | null; loading: boolean; year: number; onYear: (y: number) => void }) {
+  const [metric, setMetric] = useState<"dka" | "fires">("dka");
+  if (!data) return loading ? <div className="skeleton h-[260px] rounded-[20px]" /> : null;
+  const max = Math.max(1, ...data.years.map((y) => y[metric]));
+  const avg = data.years.filter((y) => !y.partial).reduce((s, y) => s + y[metric], 0) / Math.max(1, data.years.filter((y) => !y.partial).length);
+  return (
+    <section aria-labelledby="hist-title" className="enter">
+      <div className="flex flex-wrap items-end justify-between gap-3 px-1">
+        <h2 id="hist-title" className="font-display text-[20px] font-semibold">
+          По години
+        </h2>
+        <div role="radiogroup" aria-label="Показател" className="flex rounded-full bg-line p-1 text-[14px] font-medium">
+          {(["dka", "fires"] as const).map((m) => (
+            <button
+              key={m}
+              role="radio"
+              aria-checked={metric === m}
+              onClick={() => setMetric(m)}
+              className={`min-h-9 rounded-full px-3.5 transition-colors duration-150 ${metric === m ? "bg-card text-content shadow-[var(--shadow)]" : "text-muted"}`}
+            >
+              {m === "dka" ? "Изгоряла площ" : "Брой пожари"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mt-3 rounded-[20px] bg-card p-4 shadow-[var(--shadow)] lg:p-5">
+        <div className="relative flex h-44 items-end gap-1 lg:h-56 lg:gap-1.5">
+          <div
+            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-muted/60"
+            style={{ bottom: `${(avg / max) * 100}%` }}
+            aria-hidden
+          />
+          {data.years.map((y) => (
+            <button
+              key={y.year}
+              onClick={() => onYear(y.year)}
+              aria-label={`${y.year}: ${metric === "dka" ? dkaText(y.dka) : fires(y.fires)}${y.partial ? " до днес" : ""}. Покажи годината`}
+              aria-pressed={y.year === year}
+              className="group relative flex h-full flex-1 items-end"
+            >
+              <span
+                className="block w-full rounded-t-[4px] transition-colors duration-150 group-hover:opacity-80"
+                style={{
+                  height: `${Math.max(1.5, (y[metric] / max) * 100)}%`,
+                  background: y.year === year ? "var(--ember)" : "var(--muted)",
+                  opacity: y.year === year ? 1 : 0.35,
+                }}
+              />
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-between pt-2 text-[12px] tabular-nums text-muted">
+          <span>{data.years[0].year}</span>
+          <span>{data.years[data.years.length - 1].year}</span>
+        </div>
+        <p className="pt-3 text-[13px] leading-snug text-muted">
+          Прекъснатата линия е средното за година ({metric === "dka" ? dkaText(Math.round(avg)) : fires(Math.round(avg))}). Докоснете
+          стълбче, за да отворите годината.
+        </p>
+      </div>
+    </section>
+  );
+}

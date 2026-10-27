@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 /*
-  Tokens — drawn from the subject: fir needles, ash, ember.
+  Tokens drawn from the subject: fir needles, ash, ember.
   Ember is reserved for danger; the accent (fir) is for primary actions only.
 */
 :root {
   --surface: #f3f5f1; /* pale lichen */
   --card: #ffffff;
+  --raised: #ffffff;
   --content: #16201a; /* pine near-black */
   --muted: #55625a;
   --line: oklch(0 0 0 / 0.08);
@@ -14,6 +15,8 @@
   --accent-content: #ffffff;
   --ember: #c7361f;
   --shadow: 0 1px 2px oklch(0 0 0 / 0.06), 0 4px 16px oklch(0 0 0 / 0.05);
+  --land: #e4e9e1;
+  --land-line: oklch(0 0 0 / 0.14);
 
   /* Danger classes (EFFIS FWI scale). Text colour chosen per class for ≥4.5:1. */
   --d-low: #2f7d4a;
@@ -25,21 +28,41 @@
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --tabbar-h: 64px;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
+/* Dark: follows the device unless the person picked a theme (data-theme set in layout.tsx). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --surface: #0e1411;
     --card: #18201b;
+    --raised: #1f2822;
     --content: #e6ece4;
     --muted: #9aa79e;
     --line: oklch(1 0 0 / 0.1);
     --accent: #7fcf9e;
     --accent-content: #0e1411;
     --ember: #ff7a5c;
+    --land: #223029;
+    --land-line: oklch(1 0 0 / 0.16);
     --shadow: 0 0 0 1px oklch(1 0 0 / 0.06);
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --surface: #0e1411;
+  --card: #18201b;
+  --raised: #1f2822;
+  --content: #e6ece4;
+  --muted: #9aa79e;
+  --line: oklch(1 0 0 / 0.1);
+  --accent: #7fcf9e;
+  --accent-content: #0e1411;
+  --ember: #ff7a5c;
+  --land: #223029;
+  --land-line: oklch(1 0 0 / 0.16);
+  --shadow: 0 0 0 1px oklch(1 0 0 / 0.06);
+  color-scheme: dark;
 }
 
 /* Bright-sunlight mode: stronger text and borders. Also follows the OS setting. */
@@ -56,6 +79,8 @@
 @theme inline {
   --color-surface: var(--surface);
   --color-card: var(--card);
+  --color-raised: var(--raised);
+  --color-land: var(--land);
   --color-content: var(--content);
   --color-muted: var(--muted);
   --color-line: var(--line);
@@ -137,6 +162,24 @@ p {
   }
 }
 
-.maplibregl-ctrl-attrib {
-  font-size: 10px;
+/* Icon swaps: cross-fade with a little scale and blur instead of a hard cut. */
+.swap {
+  transition: opacity 180ms var(--ease-out), scale 180ms var(--ease-out), filter 180ms var(--ease-out);
+}
+.swap[data-hidden="true"] {
+  opacity: 0;
+  scale: 0.25;
+  filter: blur(4px);
+}
+
+/* Map regions: colour changes ease, hover lifts the edge. */
+.region {
+  transition: fill 240ms var(--ease-out), stroke 150ms ease, opacity 150ms ease;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

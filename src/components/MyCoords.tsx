@@ -45,7 +45,7 @@ export function MyCoords() {
         </button>
         {state === "error" && (
           <p role="alert" className="pt-2 text-[14px] opacity-90">
-            Няма достъп до местоположението. Опишете на оператора най-близкото село, връх или пътя.
+            Нямаме достъп до местоположението. Опишете на оператора най-близкото село, връх или път.
           </p>
         )}
       </div>
@@ -60,7 +60,10 @@ export function MyCoords() {
         onClick={copy}
         className="pressable mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-[15px] font-semibold text-[#8a1a12]"
       >
-        {copied ? <Check size={18} strokeWidth={2} aria-hidden /> : <Copy size={18} strokeWidth={2} aria-hidden />}
+        <span className="relative grid size-[18px] place-items-center">
+          <Copy size={18} strokeWidth={2} aria-hidden className="swap absolute" data-hidden={copied} />
+          <Check size={18} strokeWidth={2.25} aria-hidden className="swap absolute" data-hidden={!copied} />
+        </span>
         {copied ? "Копирано" : "Копирай"}
       </button>
     </div>

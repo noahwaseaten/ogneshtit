@@ -1,20 +1,20 @@
 {
-  "name": "gorata-dnes",
-  "version": "0.1.0",
+  "name": "ogneshtit",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prebuild": "node scripts/prebuild.mjs",
-    "predev": "node scripts/prebuild.mjs",
-    "test:fwi": "tsx scripts/test-fwi.ts"
+    "test:fwi": "tsx scripts/test-fwi.ts",
+    "typecheck": "tsc --noEmit",
+    "map": "node scripts/oblasts.mjs",
+    "border": "node scripts/bulgaria.mjs"
   },
   "dependencies": {
     "@fontsource-variable/onest": "5.3.1",
     "lucide-react": "1.62.0",
-    "maplibre-gl": "6.16.0",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -33,5 +33,15 @@
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "world-atlas": "2.0.2"
+  },
+  "description": "ОгнеЩит: опасност от горски пожар днес, пожари наблизо и сигнали за незаконна сеч в България.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/noahwaseaten/ogneshtit.git"
+  },
+  "homepage": "https://ogneshtit.noahwaseaten.com",
+  "engines": {
+    "node": ">=20.9"
   }
 }

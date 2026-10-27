@@ -1,7 +1,8 @@
 // Offline support: the app shell and the "Помогни" screen (with 112) must open with no signal.
+// Bump VERSION when the list below changes.
 // Pages and API data: network first, cached copy if offline. Static assets: cache first.
-const VERSION = "v1";
-const SHELL = ["/", "/pomogni", "/karta", "/manifest.webmanifest", "/app-icon/192"];
+const VERSION = "v2";
+const SHELL = ["/", "/pomogni", "/pozhari", "/za", "/manifest.webmanifest", "/app-icon/192"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -25,7 +26,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return; // map tiles etc. go straight to the network
+  if (url.origin !== self.location.origin) return; // other sites (geocoding, ticket photos) go straight to the network
 
   if (url.pathname.startsWith("/_next/static/")) {
     e.respondWith(

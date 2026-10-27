@@ -9,8 +9,11 @@ export type RiskDay = {
   temp: number;
   rh: number;
   wind: number;
+  windDir: number; // degrees the wind blows from
   rain: number;
 };
+
+export type Air = { aqi: number; pm25: number; pm10: number };
 
 export type RiskResponse = {
   lat: number;
@@ -18,7 +21,7 @@ export type RiskResponse = {
   today: RiskDay;
   forecast: RiskDay[]; // next 5 days
   daysSinceRain: number;
-  effis: { fwi: number; danger: string } | null;
+  air: Air | null;
   updated: string;
 };
 
@@ -28,6 +31,7 @@ type OpenMeteo = {
     temperature_2m: (number | null)[];
     relative_humidity_2m: (number | null)[];
     wind_speed_10m: (number | null)[];
+    wind_direction_10m: (number | null)[];
     precipitation: (number | null)[];
   };
 };
@@ -44,14 +48,14 @@ export async function getRisk(lat: number, lon: number): Promise<RiskResponse> {
   url.search = new URLSearchParams({
     latitude: String(lat),
     longitude: String(lon),
-    hourly: "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation",
+    hourly: "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation",
     past_days: "45",
     forecast_days: "7",
     timezone: "Europe/Sofia",
     wind_speed_unit: "kmh",
   }).toString();
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const [res, air] = await Promise.all([fetch(url, { signal: AbortSignal.timeout(8000) }), getAir(lat, lon)]);
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
   const data = (await res.json()) as OpenMeteo;
   const h = data.hourly;
@@ -75,6 +79,7 @@ export async function getRisk(lat: number, lon: number): Promise<RiskResponse> {
   });
 
   const series = runSeries(days);
+  const dirAt = new Map(h.time.map((t, i) => [t.slice(0, 10), t.endsWith("T12:00") ? h.wind_direction_10m[i] : undefined]).filter(([, v]) => v != null) as [string, number][]);
   const today = todayInSofia();
   const idx = Math.max(0, series.findIndex((d) => d.date === today));
   const toDay = (d: (typeof series)[number]): RiskDay => ({
@@ -84,6 +89,7 @@ export async function getRisk(lat: number, lon: number): Promise<RiskResponse> {
     temp: Math.round(d.temp),
     rh: Math.round(d.rh),
     wind: Math.round(d.wind),
+    windDir: Math.round(dirAt.get(d.date) ?? 0),
     rain: Math.round(d.rain * 10) / 10,
   });
 
@@ -100,40 +106,26 @@ export async function getRisk(lat: number, lon: number): Promise<RiskResponse> {
     today: toDay(series[idx]),
     forecast: series.slice(idx + 1, idx + 6).map(toDay),
     daysSinceRain,
-    effis: await getEffis(lat, lon, today),
+    air,
     updated: new Date().toISOString(),
   };
 }
 
-/** Cross-check: EFFIS's own FWI for this point (ECMWF model). Best-effort; null if unavailable. */
-async function getEffis(lat: number, lon: number, date: string) {
+/** Air quality now (CAMS model via Open-Meteo). Smoke from fires shows up as fine particles. Best-effort. */
+async function getAir(lat: number, lon: number): Promise<Air | null> {
   try {
-    const d = 0.05;
-    const url = new URL("https://maps.effis.emergency.copernicus.eu/effis");
+    const url = new URL("https://air-quality-api.open-meteo.com/v1/air-quality");
     url.search = new URLSearchParams({
-      SERVICE: "WMS",
-      VERSION: "1.1.1",
-      REQUEST: "GetFeatureInfo",
-      LAYERS: "ecmwf007.fwi",
-      QUERY_LAYERS: "ecmwf007.fwi",
-      STYLES: "",
-      SRS: "EPSG:4326",
-      BBOX: [lon - d, lat - d, lon + d, lat + d].join(","),
-      WIDTH: "3",
-      HEIGHT: "3",
-      X: "1",
-      Y: "1",
-      INFO_FORMAT: "text/plain",
-      TIME: date,
+      latitude: String(lat),
+      longitude: String(lon),
+      current: "european_aqi,pm2_5,pm10",
+      timezone: "Europe/Sofia",
     }).toString();
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
-    const text = await res.text();
-    const m = text.match(/value_0\s*=\s*'?(-?\d+(?:\.\d+)?)/i) ?? text.match(/=\s*'?(-?\d+(?:\.\d+)?)'?\s*$/m);
-    if (!m) return null;
-    const fwi = Number(m[1]);
-    if (!Number.isFinite(fwi) || fwi < 0 || fwi > 200) return null;
-    return { fwi: Math.round(fwi * 10) / 10, danger: dangerFor(fwi).key };
+    const c = ((await res.json()) as { current?: { european_aqi?: number; pm2_5?: number; pm10?: number } }).current;
+    if (c?.european_aqi == null) return null;
+    return { aqi: Math.round(c.european_aqi), pm25: Math.round(c.pm2_5 ?? 0), pm10: Math.round(c.pm10 ?? 0) };
   } catch {
     return null;
   }

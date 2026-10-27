@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
-export type Loc = { lat: number; lon: number; label: string; source: "gps" | "place" };
+export type Loc = { lat: number; lon: number; label: string; source: "gps" | "place"; region?: string };
 
-const KEY = "gorata:loc";
+const KEY = "ogneshtit:loc";
+const OLD_KEY = "gorata:loc"; // name used before the app became ОгнеЩит
 const DEFAULT: Loc = { lat: 42.698, lon: 23.322, label: "София", source: "place" };
 
 const listeners = new Set<() => void>();
@@ -13,7 +14,7 @@ let cached: Loc | null = null;
 function read(): Loc {
   if (cached) return cached;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY);
     if (raw) cached = JSON.parse(raw) as Loc;
   } catch {}
   return cached ?? DEFAULT;
@@ -27,7 +28,7 @@ function write(loc: Loc) {
   listeners.forEach((l) => l());
 }
 
-/** Shared location: GPS (asked for only when the person taps) or a chosen oblast centre. */
+/** Shared location: GPS (asked for only when the person taps), a searched place or an oblast centre. */
 export function useLocation() {
   const loc = useSyncExternalStore(
     (cb) => {
@@ -56,8 +57,8 @@ export function useLocation() {
         setLocating(false);
         setGpsError(
           e.code === e.PERMISSION_DENIED
-            ? "Достъпът до местоположение е отказан. Изберете област от списъка."
-            : "Не успяхме да определим местоположението. Опитайте отново или изберете област.",
+            ? "Не разрешихте достъп до местоположението. Потърсете населеното място по име."
+            : "Не успяхме да открием къде сте. Опитайте пак или потърсете населеното място.",
         );
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
@@ -78,11 +79,11 @@ export function useJson<T>(url: string | null) {
   useEffect(() => {
     if (!url || !key) return;
     let alive = true;
-    const cacheKey = `gorata:cache:${url}`;
+    const cacheKey = `ogneshtit:cache:${url}`;
     fetch(url)
       .then(async (r) => {
         const body = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(body?.error ?? "Данните не са достъпни.");
+        if (!r.ok) throw new Error(body?.error ?? "Данните не се заредиха.");
         return body as T;
       })
       .then((data) => {
@@ -103,7 +104,7 @@ export function useJson<T>(url: string | null) {
           key,
           url,
           data: stale,
-          error: navigator.onLine ? e.message : "Няма връзка с интернет.",
+          error: navigator.onLine ? e.message : "Нямате връзка с интернет.",
           offline: !!stale,
         });
       });
@@ -133,3 +134,71 @@ export function timeAgo(iso: string) {
 
 export const weekday = (date: string) =>
   new Intl.DateTimeFormat("bg-BG", { weekday: "short", timeZone: "UTC" }).format(new Date(date + "T00:00:00Z"));
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+export function timeAgoLong(iso: string) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 1) return "току-що";
+  if (mins < 60) return `преди ${plural(mins, "минута", "минути")}`;
+  const h = Math.round(mins / 60);
+  if (h < 24) return `преди ${plural(h, "час", "часа")}`;
+  return `преди ${plural(Math.round(h / 24), "ден", "дни")}`;
+}
+
+export const nf = (n: number, digits = 0) => n.toLocaleString("bg-BG", { maximumFractionDigits: digits });
+
+export const sofiaTime = (iso: string, opts: Intl.DateTimeFormatOptions) =>
+  new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", ...opts });
+
+/** Media query as state, e.g. useMedia("(min-width: 1024px)"). False on the server. */
+export function useMedia(query: string) {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia(query);
+      m.addEventListener("change", cb);
+      return () => m.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
+}
+
+// Theme: "system" follows the device; the choice is applied before paint by a script in layout.tsx.
+export type ThemeChoice = "system" | "light" | "dark";
+const THEME_KEY = "ogneshtit:theme";
+const themeListeners = new Set<() => void>();
+
+function readTheme(): ThemeChoice {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    if (t === "light" || t === "dark") return t;
+  } catch {}
+  return "system";
+}
+
+export function applyTheme(t: ThemeChoice) {
+  try {
+    if (t === "system") localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, t);
+  } catch {}
+  const root = document.documentElement;
+  if (t === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", t);
+  themeListeners.forEach((l) => l());
+}
+
+export function useTheme() {
+  const theme = useSyncExternalStore(
+    (cb) => {
+      themeListeners.add(cb);
+      return () => themeListeners.delete(cb);
+    },
+    readTheme,
+    () => "system" as ThemeChoice,
+  );
+  return [theme, applyTheme] as const;
+}
+
+/** "в София", but "във Варна" / "във Велико Търново" before в and ф. */
+export const inPlace = (name: string) => `${/^[ВвФф]/.test(name) ? "във" : "в"} ${name}`;
