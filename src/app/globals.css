@@ -56,7 +56,7 @@
     --heat-1: #f3c44a;
     --heat-2: #f7913a;
     --heat-3: #ff5f3a;
-    --heat-4: #ff8f8f;
+    --heat-4: #ff3d6e;
     --land: #223029;
     --land-line: oklch(1 0 0 / 0.16);
     --shadow: none;
@@ -68,7 +68,7 @@
   --heat-1: #f3c44a;
   --heat-2: #f7913a;
   --heat-3: #ff5f3a;
-  --heat-4: #ff8f8f;
+  --heat-4: #ff3d6e;
   --surface: #0e1411;
   --card: #18201b;
   --raised: #1f2822;
@@ -237,4 +237,63 @@ p {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Satellite fire marks (FireMark.tsx). Transform and opacity only. */
+.fire-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: fire-halo 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes fire-halo {
+  0% {
+    opacity: 0.42;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+.fire-flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  animation: fire-flicker 1.7s ease-in-out infinite;
+}
+@keyframes fire-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  22% {
+    transform: scale(0.96, 1.06) skewX(-3deg);
+  }
+  48% {
+    transform: scale(1.03, 0.96) skewX(1deg);
+  }
+  74% {
+    transform: scale(0.98, 1.04) skewX(3deg);
+  }
+}
+.fire-pop {
+  transform-box: fill-box;
+  transform-origin: 50% 70%;
+  animation: fire-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes fire-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fire-halo,
+  .fire-flicker,
+  .fire-pop {
+    animation: none;
+  }
+  .fire-halo {
+    opacity: 0.18;
+  }
 }

@@ -11,6 +11,7 @@ import { placeName } from "@/i18n/names";
 import type { DangerMap } from "@/lib/risk";
 import type { FireStats } from "@/lib/iag";
 import { BulgariaMap } from "./BulgariaMap";
+import { FireIcon } from "./FireMark";
 import { HEAT, NEAR_KM, SpotRow, SpotSheet, firesWord, useSpots, whoOf, type Spot } from "./FiresNear";
 import { Sheet } from "./Sheet";
 
@@ -164,13 +165,20 @@ function Legend({ layer, hours, who }: { layer: Layer; hours?: number; who: stri
           </li>
           {HEAT.map((h, i) => (
             <li key={h.color} className={item}>
-              <span className="size-3 rounded-full" style={{ background: h.color }} aria-hidden />
+              <FireIcon tier={i} age="day" color={h.color} size={12 + i * 2} />
               {t(["слаба", "средна", "силна", "много силна"][i], ["weak", "medium", "strong", "very strong"][i])}
             </li>
           ))}
           <li className={item}>
-            <span className="size-3 rounded-full bg-[var(--heat-2)] opacity-50" aria-hidden />
-            {t("по-старо от 24 ч", "older than 24 h")}
+            <span className="relative grid size-4 place-items-center" aria-hidden>
+              <span className="fire-halo absolute inset-0 rounded-full bg-[var(--heat-3)]" />
+              <span className="size-2 rounded-full bg-[var(--heat-3)]" />
+            </span>
+            {t("пулсира: до 6 ч", "pulsing: under 6 h")}
+          </li>
+          <li className={item}>
+            <FireIcon tier={1} age="old" color="var(--heat-2)" size={16} />
+            {t("жарава: по-старо от 24 ч", "ember: older than 24 h")}
           </li>
           <li className={item}>
             <span className="size-3 rounded-full bg-[#1f6fd1]" aria-hidden />

@@ -6,6 +6,7 @@ import { MAP_H, MAP_W, OBLASTS, UNITS_PER_KM, project } from "@/data/oblasts";
 import { PLACES } from "@/data/places";
 import { useI18n } from "@/i18n/client";
 import { placeName } from "@/i18n/names";
+import { MapFire, MapFireGroup, type FireAge } from "./FireMark";
 
 // A plain SVG map of Bulgaria's 28 oblasts. No tiles and no map library: it draws instantly and
 // works offline. With `zoomable` it pans and zooms by drag, pinch, wheel, double tap and buttons.
@@ -13,14 +14,17 @@ import { placeName } from "@/i18n/names";
 // Performance: during a gesture the viewBox is written straight to the DOM (no React render);
 // React only re-renders when the gesture ends, which is when markers are re-clustered.
 
-/** `color` and `rank` let points say how fresh they are; a group takes the colour of its lowest rank. */
-export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number; faded?: boolean };
+/**
+ * A point on the map. Fires also carry `tier` (heat step 0..3) and `age`, and are drawn with FireMark.
+ * `rank` decides which fire leads a group (lowest wins).
+ */
+export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number; tier?: number; age?: FireAge };
 /** Floating map control surface. */
 const ctl = "bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] transition-colors duration-150";
 
 const lead = (pts: MapPoint[]) => [...pts].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))[0];
 const pointColor = (pts: MapPoint[]) => lead(pts)?.color ?? "var(--ember)";
-const pointOpacity = (pts: MapPoint[]) => (pts.every((p) => p.faded) ? 0.55 : 1);
+const groupAge = (pts: MapPoint[]): FireAge => (pts.some((p) => p.age === "fresh") ? "fresh" : pts.every((p) => p.age === "old") ? "old" : "day");
 
 const MAJOR = new Set(["София", "Пловдив", "Варна", "Бургас", "Русе", "Плевен", "Стара Загора", "Благоевград"]);
 const MAX_ZOOM = 40;
@@ -374,7 +378,7 @@ export function BulgariaMap({
   // Greedy distance clustering in screen space: a fire joins a group when it would touch it on
   // screen, so two markers can never overlap (grid cells let neighbours sit on top of each other).
   const clusters = useMemo(() => {
-    const reach = 26 * upp;
+    const reach = 34 * upp; // a group pill is about 38 × 24 px
     const groups: { x: number; y: number; pts: MapPoint[]; xs: number[]; ys: number[] }[] = [];
     for (const { p, xy } of projected) {
       const near = groups.find((c) => Math.hypot(c.x - xy[0], c.y - xy[1]) < reach);
@@ -522,7 +526,7 @@ export function BulgariaMap({
 
         {/* Handlers below read refs only when tapped, never while rendering. */}
         {/* eslint-disable-next-line react-hooks/refs */}
-        {clusters.map((c) => {
+        {clusters.map((c, ci) => {
           const n = c.pts.length;
           // At the closest zoom a group that still overlaps fans out so each fire can be tapped.
           if (n > 1 && zoomable && zoom >= MAX_ZOOM * 0.95) {
@@ -537,14 +541,14 @@ export function BulgariaMap({
                     <g key={p.id} role="button" tabIndex={0} aria-label={p.label} className="cursor-pointer outline-none" onClick={() => tap(() => onPoints?.([p]))} onKeyDown={onKey(() => onPoints?.([p]))}>
                       <line x1={c.x} y1={c.y} x2={x} y2={y} stroke="var(--muted)" strokeWidth={1 * upp} />
                       <circle cx={x} cy={y} r={14 * upp} fill="transparent" />
-                      <circle cx={x} cy={y} r={5.5 * upp} fill={p.color ?? "var(--ember)"} fillOpacity={p.faded ? 0.55 : 1} stroke="var(--card)" strokeWidth={1.5 * upp} />
+                      <MapFire x={x} y={y} upp={upp} tier={p.tier ?? 1} age={p.age ?? "day"} color={p.color ?? "var(--ember)"} seed={i} />
                     </g>
                   );
                 })}
               </g>
             );
           }
-          const rad = (n > 1 ? 10 + Math.min(5, Math.log2(n) * 1.6) : 5.5) * upp;
+          const first = c.pts[0];
           return (
             <g
               key={c.pts[0].id}
@@ -556,11 +560,10 @@ export function BulgariaMap({
               onKeyDown={onKey(() => openCluster(c))}
             >
               <circle cx={c.x} cy={c.y} r={22 * upp} fill="transparent" />
-              <circle cx={c.x} cy={c.y} r={rad} fill={pointColor(c.pts)} fillOpacity={pointOpacity(c.pts)} stroke="var(--card)" strokeWidth={1.5 * upp} pointerEvents="none" />
-              {n > 1 && (
-                <text x={c.x} y={c.y} dy="0.35em" textAnchor="middle" fontSize={fontPx} fontWeight={600} fill="#fff" pointerEvents="none" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {n}
-                </text>
+              {n === 1 ? (
+                <MapFire x={c.x} y={c.y} upp={upp} tier={first.tier ?? 1} age={first.age ?? "day"} color={first.color ?? "var(--ember)"} seed={ci} />
+              ) : (
+                <MapFireGroup x={c.x} y={c.y} upp={upp} n={n} age={groupAge(c.pts)} color={pointColor(c.pts)} fontPx={fontPx} />
               )}
             </g>
           );

@@ -12,6 +12,7 @@ import { formatters } from "@/i18n/format";
 import type { Lang } from "@/i18n/lang";
 import { placeName } from "@/i18n/names";
 import { BulgariaMap, type MapPoint } from "./BulgariaMap";
+import { FireTile, HeatMeter, fireAge } from "./FireMark";
 import { Sheet } from "./Sheet";
 
 export const NEAR_KM = 50;
@@ -68,7 +69,8 @@ export function useSpots(loc: Loc) {
         color: heatColor(s.frp),
         // Strongest fire decides a group's colour; fresh fires win over old ones.
         rank: (isOld(s.time) ? 10 : 0) - heatRank(s.frp),
-        faded: isOld(s.time),
+        tier: heatRank(s.frp),
+        age: fireAge(s.time),
       })),
     [all, t, lang, agoLong],
   );
@@ -154,7 +156,7 @@ export function SpotSheet({ spots, who, onClose, onPick }: { spots: Spot[] | nul
             <div>
               <dt className="text-[13px] text-muted">{t("Топлина", "Heat")}</dt>
               <dd className="font-medium">
-                {strength(one.frp, lang)} <span className="text-muted">({nf(one.frp, 1)} MW)</span>
+                <HeatMeter tier={heatRank(one.frp)} color={heatColor(one.frp)} /> {strength(one.frp, lang)} <span className="text-muted">({nf(one.frp, 1)} MW)</span>
               </dd>
             </div>
             <div>
@@ -207,14 +209,14 @@ export function SpotRow({ s, onClick }: { s: Spot; onClick: () => void }) {
   const { t, lang, agoLong } = useI18n();
   return (
     <button onClick={onClick} className="hover-fill flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left">
-      <span className="size-3 shrink-0 rounded-full" style={{ background: heatColor(s.frp), opacity: isOld(s.time) ? 0.5 : 1 }} aria-hidden />
+      <FireTile tier={heatRank(s.frp)} age={fireAge(s.time)} color={heatColor(s.frp)} />
       <span className="min-w-0 flex-1">
         <span className="block text-[16px] font-medium tabular-nums">
           {where(s, lang)}
           {s.km <= NEAR_KM && <span className="text-ember"> · {t("наблизо", "nearby")}</span>}
         </span>
         <span className="block text-[13px] text-muted">
-          {agoLong(s.time)} · {t(`${strength(s.frp, "bg")} топлина`, `${strength(s.frp, "en")} heat`)}
+          {agoLong(s.time)} · <HeatMeter tier={heatRank(s.frp)} color={heatColor(s.frp)} /> {t(`${strength(s.frp, "bg")} топлина`, `${strength(s.frp, "en")} heat`)}
         </span>
       </span>
       <ChevronRight size={20} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />

@@ -55,7 +55,9 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
   `prefers-reduced-motion` respected.
 - Hover and press: always the `hover-fill` class (globals.css), never ad-hoc `hover:bg-*`. Rows in a grouped card are
   edge to edge (`px-4`, no radius) and the card has `overflow-hidden`; rows in a sheet use `-mx-3 px-3 rounded-xl`.
-- Satellite fires are coloured by heat (FRP: `--heat-1..4`, `HEAT` in FiresNear); fires older than 24 h are faded. Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
+- Satellite fires are drawn by `FireMark.tsx` everywhere: a flame for the last 24 h (an ember dot when older), flame size
+  and colour by heat (FRP: `--heat-1..4`, `HEAT` in FiresNear), a breathing glow under 6 h, flicker for strong fires;
+  groups are a pill with the count. Animations are transform/opacity only and stop with reduced motion. Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
 
 ## Languages (Bulgarian and English)
 
