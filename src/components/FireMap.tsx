@@ -43,7 +43,8 @@ export default function FireMap({
   // Push the latest hotspots and position into the map (no-op until the style has loaded).
   const sync = () => {
     const m = map.current;
-    if (!m || !m.isStyleLoaded()) return;
+    // Sources exist only after "load"; isStyleLoaded() is false while new sources fetch, so check sources.
+    if (!m || !m.getSource("me")) return;
     const { hotspots: hs, center: c } = latest.current;
     (m.getSource("fires") as GeoJSONSource | undefined)?.setData(toGeoJSON(hs));
     (m.getSource("me") as GeoJSONSource | undefined)?.setData(
@@ -184,6 +185,7 @@ export default function FireMap({
           "fires-halo",
           () => (m.getCanvas().style.cursor = ""),
         );
+        sync();
       });
     })();
 

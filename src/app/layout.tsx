@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Гората днес",
   description: "Опасност от горски пожар днес, възможни пожари наблизо и какво да направите — за всеки в България.",
   applicationName: "Гората днес",
+  icons: { icon: "/app-icon/192", apple: "/app-icon/apple" },
   appleWebApp: { capable: true, title: "Гората днес", statusBarStyle: "default" },
 };
 

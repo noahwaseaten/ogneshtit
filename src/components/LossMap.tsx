@@ -39,7 +39,7 @@ export default function LossMap() {
 
   const sync = () => {
     const m = map.current;
-    if (!m || !m.isStyleLoaded()) return;
+    if (!m || !m.getSource("natura")) return;
     const { natura: fc, showNatura: on } = latest.current;
     if (fc) (m.getSource("natura") as GeoJSONSource | undefined)?.setData(fc);
     for (const id of ["natura-fill", "natura-line"])
@@ -53,7 +53,7 @@ export default function LossMap() {
 
   useEffect(() => {
     const m = map.current;
-    if (!m || !m.isStyleLoaded()) return;
+    if (!m || !m.getSource("loss")) return;
     (m.getSource("loss") as RasterTileSource | undefined)?.setTiles(tiles(period.from, period.to));
   }, [period]);
 

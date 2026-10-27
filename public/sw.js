@@ -1,7 +1,7 @@
 // Offline support: the app shell and the "Помогни" screen (with 112) must open with no signal.
 // Pages and API data: network first, cached copy if offline. Static assets: cache first.
 const VERSION = "v1";
-const SHELL = ["/", "/pomogni", "/karta", "/manifest.webmanifest", "/icon-192.png"];
+const SHELL = ["/", "/pomogni", "/karta", "/manifest.webmanifest", "/app-icon/192"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
