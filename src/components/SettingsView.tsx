@@ -1,12 +1,12 @@
 "use client";
 
-import { Monitor, Moon, Phone, Sun } from "lucide-react";
-import { useJson, useTheme } from "@/lib/client";
+import { Monitor, Moon, Phone, Satellite, Sun } from "lucide-react";
+import { useAdvanced, useJson, useTheme } from "@/lib/client";
 import { setLanguage, useI18n } from "@/i18n/client";
 import type { StatusResponse, SourceStatus } from "@/app/api/status/route";
 import { Alerts } from "./Alerts";
 import { InstallHelp } from "./InstallHelp";
-import { GithubIcon, Segmented, SettingsGroup, SettingsRow } from "./Settings";
+import { GithubIcon, Segmented, SettingsGroup, SettingsRow, SettingsToggle } from "./Settings";
 import { REPO } from "./Shell";
 
 type Source = { key: SourceStatus["key"] | null; name: [string, string]; what: [string, string]; href: string };
@@ -29,6 +29,7 @@ const SOURCES: Source[] = [
 export function SettingsView() {
   const { t, tp, lang } = useI18n();
   const [theme, setTheme] = useTheme();
+  const [advanced, setAdvanced] = useAdvanced();
   const status = useJson<StatusResponse>("/api/status");
   const byKey = new Map((status.data?.sources ?? []).map((s) => [s.key, s]));
 
@@ -72,6 +73,19 @@ export function SettingsView() {
       <Alerts />
 
       <InstallHelp />
+
+      <SettingsGroup title={t("За напреднали", "Advanced")}>
+        <SettingsToggle
+          icon={<Satellite strokeWidth={1.75} aria-hidden />}
+          title={t("График на спътниците", "Satellite schedule")}
+          subtitle={t(
+            "Показва на началния екран кога минава всеки спътник. Подсказките при огньовете се виждат и без това.",
+            "Shows on the home screen when each satellite passes. The hints on fires show either way.",
+          )}
+          checked={advanced}
+          onChange={setAdvanced}
+        />
+      </SettingsGroup>
 
       <SettingsGroup
         title={t("Данни", "Data")}

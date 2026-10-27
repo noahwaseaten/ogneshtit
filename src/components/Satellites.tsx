@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { Check, Clock, Flame, RotateCw, Satellite } from "lucide-react";
 import { useJson, useNow } from "@/lib/client";
-import { SAT_NAMES, type FiresResponse } from "@/lib/fire-types";
+import { SAT_NAMES, type Fire, type FiresResponse } from "@/lib/fire-types";
 import { DATA_DELAY_MIN, longestGap, looksOf, stateOf, type Look, type LookState, type PassesResponse } from "@/lib/pass-types";
 import { useI18n } from "@/i18n/client";
 
@@ -55,16 +55,128 @@ export function useLooks() {
 
 const names = (l: Look) => [...new Set(l.passes.map((p) => SAT_NAMES[p.sat]))].join(", ");
 
-/** "Следващото преминаване над България е след 2 ч 10 мин, в 14:12." for a fire's details. */
-export function NextLook() {
+// One shared copy of the predicted passes for every small hint on the page, so ten fire rows make one request.
+const PASSES_KEY = "ogneshtit:cache:/api/passes";
+let shared: PassesResponse | null = null;
+let sharedAt = 0;
+let inflight = false;
+const subs = new Set<() => void>();
+
+function loadShared() {
+  if (inflight || (shared && Date.now() - sharedAt < 30 * 60e3)) return;
+  inflight = true;
+  fetch("/api/passes")
+    .then((r) => (r.ok ? (r.json() as Promise<PassesResponse>) : Promise.reject(new Error(String(r.status)))))
+    .then((d) => {
+      shared = d;
+      sharedAt = Date.now();
+      try {
+        localStorage.setItem(PASSES_KEY, JSON.stringify(d));
+      } catch {}
+    })
+    .catch(() => {
+      if (shared) return;
+      try {
+        shared = JSON.parse(localStorage.getItem(PASSES_KEY) ?? "null");
+      } catch {}
+    })
+    .finally(() => {
+      inflight = false;
+      subs.forEach((f) => f());
+    });
+}
+
+const subscribe = (cb: () => void) => {
+  subs.add(cb);
+  loadShared();
+  return () => void subs.delete(cb);
+};
+
+/** The last and next satellite look at Bulgaria. Quiet when the prediction is not available: hints just do not show. */
+export function usePassInfo() {
+  const data = useSyncExternalStore(subscribe, () => shared, () => null);
+  const now = useNow();
+  return useMemo(() => {
+    const looks = looksOf(data?.passes ?? []);
+    return {
+      now,
+      next: looks.find((l) => l.t > now) ?? null,
+      last: [...looks].reverse().find((l) => l.t <= now) ?? null,
+      ready: !!data && now > 0,
+    };
+  }, [data, now]);
+}
+export type PassInfo = ReturnType<typeof usePassInfo>;
+
+const clockOf = (time: ReturnType<typeof useI18n>["time"], ms: number) => time(new Date(ms).toISOString(), { hour: "2-digit", minute: "2-digit" });
+
+/**
+ * Fire details: when a satellite looks at this fire next, with the wait drawn between the last sighting and
+ * that look. Only for fires that can still change (not permanent heat, not already missed).
+ */
+export function NextCheck({ f, info }: { f: Fire; info: PassInfo }) {
   const { t, time } = useI18n();
   const dur = useDuration();
-  const { next, now, ready } = useLooks();
+  const { next, now, ready } = info;
   if (!ready || !next) return null;
-  const at = time(new Date(next.t).toISOString(), { hour: "2-digit", minute: "2-digit" });
+  const seen = Date.parse(f.last);
+  const done = Math.min(1, Math.max(0, (now - seen) / Math.max(1, next.t - seen)));
+  const sure = f.status === "confirmed";
   return (
-    <p className="pt-2 text-[15px] leading-snug">
-      {t(`Следващият спътник минава над България след ${dur(next.t - now)}, в ${at}.`, `The next satellite passes over Bulgaria in ${dur(next.t - now)}, at ${at}.`)}
+    <div className="mt-3 rounded-2xl bg-surface p-4">
+      <div className="flex items-center gap-2.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-tonal text-accent">
+          <Satellite size={18} strokeWidth={1.75} aria-hidden />
+        </span>
+        <p className="text-[15px] font-semibold leading-tight">{t("Следваща проверка от спътник", "Next satellite check")}</p>
+      </div>
+      <p className="flex items-baseline justify-between gap-3 pt-3 tabular-nums">
+        <span className="font-display text-[24px] font-semibold leading-none">{t(`след ${dur(next.t - now)}`, `in ${dur(next.t - now)}`)}</span>
+        <span className="text-[15px] font-medium text-muted">{clockOf(time, next.t)}</span>
+      </p>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line" role="presentation">
+        <div className="fill h-full origin-left rounded-full bg-accent" style={{ "--p": done } as React.CSSProperties} />
+      </div>
+      <p className="flex justify-between gap-3 pt-1.5 text-[13px] tabular-nums text-muted">
+        <span>{t(`Видян преди ${dur(now - seen)}`, `Seen ${dur(now - seen)} ago`)}</span>
+        <span className="truncate">{names(next)}</span>
+      </p>
+      <p className="pt-3 text-[14px] leading-[1.45]">
+        {sure
+          ? t("Тази проверка показва дали още гори.", "This check shows whether it is still burning.")
+          : t("Ако още гори, ще се види пак и ще стане потвърден. Ако не се види, вероятно е угаснал.", "If it is still burning it will show up again and be confirmed. If not, it has probably gone out.")}{" "}
+        {!next.sharp && t("Спътникът гледа под ъгъл, затова малък огън може да се изпусне.", "The satellite looks at an angle, so a small fire can be missed.")}
+      </p>
+      <p className="pt-1 text-[13px] leading-[1.4] text-muted">{t(`Данните стигат до приложението до ${dur(DATA_DELAY_MIN * 60e3)} след преминаването.`, `The data reaches the app up to ${dur(DATA_DELAY_MIN * 60e3)} after the pass.`)}</p>
+    </div>
+  );
+}
+
+/** One short line for a list row: "проверка в 01:53". */
+export function CheckHint({ info }: { info: PassInfo }) {
+  const { t, time } = useI18n();
+  if (!info.ready || !info.next) return null;
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap">
+      <Satellite size={13} strokeWidth={1.75} aria-hidden />
+      {t(`проверка в ${clockOf(time, info.next.t)}`, `check at ${clockOf(time, info.next.t)}`)}
+    </span>
+  );
+}
+
+/** Under a map: when satellites last looked and when they look next. */
+export function PassCaption({ info }: { info: PassInfo }) {
+  const { t, time } = useI18n();
+  const dur = useDuration();
+  const { next, last, now, ready } = info;
+  if (!ready || !next) return null;
+  return (
+    <p className="flex items-start gap-2 px-1 pt-3 text-[14px] leading-[1.4] text-muted">
+      <Satellite size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden />
+      <span className="tabular-nums">
+        {last && t(`Последният спътник мина преди ${dur(now - last.t)}. `, `The last satellite passed ${dur(now - last.t)} ago. `)}
+        {t(`Следващият: след ${dur(next.t - now)}, в ${clockOf(time, next.t)}.`, `The next one: in ${dur(next.t - now)}, at ${clockOf(time, next.t)}.`)}
+      </span>
     </p>
   );
 }

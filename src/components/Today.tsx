@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { useLocation, useJson } from "@/lib/client";
+import { useAdvanced, useLocation, useJson } from "@/lib/client";
 import { oblastAt } from "@/lib/oblast";
 import type { RiskResponse } from "@/lib/risk";
 import { LocationPicker } from "./LocationPicker";
@@ -20,6 +20,7 @@ const noop = () => () => {};
 
 export function Today() {
   const { loc } = useLocation();
+  const [advanced] = useAdvanced();
   const { t, lang } = useI18n();
   const risk = useJson<RiskResponse>(`/api/risk?lat=${loc.lat.toFixed(3)}&lon=${loc.lon.toFixed(3)}`);
   // The date is rendered on the device only, so a prerendered page never shows a stale day.
@@ -41,7 +42,7 @@ export function Today() {
       <div className="min-w-0 lg:sticky lg:top-8">
         <div className="flex flex-col gap-8">
           <FiresSummary loc={loc} />
-          <Satellites />
+          {advanced && <Satellites />}
           <Alerts help />
         </div>
       </div>
