@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Check, Clock, Flame, Satellite } from "lucide-react";
+import { Check, Clock, Flame, RotateCw, Satellite } from "lucide-react";
 import { useJson, useNow } from "@/lib/client";
 import { SAT_NAMES, type FiresResponse } from "@/lib/fire-types";
 import { DATA_DELAY_MIN, longestGap, looksOf, stateOf, type Look, type LookState, type PassesResponse } from "@/lib/pass-types";
@@ -45,11 +45,12 @@ export function useLooks() {
       haveFires: !!seen,
       loading: orbit.loading,
       error: orbit.error,
+      retry: orbit.retry,
       ready: !!orbit.data && now > 0,
       stale: !!orbit.data && orbit.data.dropped.length > 0,
       dropped: orbit.data?.dropped ?? [],
     };
-  }, [looks, seen, now, orbit.data, orbit.loading, orbit.error]);
+  }, [looks, seen, now, orbit.data, orbit.loading, orbit.error, orbit.retry]);
 }
 
 const names = (l: Look) => [...new Set(l.passes.map((p) => SAT_NAMES[p.sat]))].join(", ");
@@ -71,7 +72,7 @@ export function NextLook() {
 export function Satellites() {
   const { t, time } = useI18n();
   const dur = useDuration();
-  const { now, looks, next, upcoming, past, stateOf: state, haveFires, ready, loading, error, dropped } = useLooks();
+  const { now, looks, next, upcoming, past, stateOf: state, haveFires, ready, loading, error, retry, dropped } = useLooks();
   const clock = (ms: number) => time(new Date(ms).toISOString(), { hour: "2-digit", minute: "2-digit" });
 
   const lastPast = past[past.length - 1];
@@ -105,24 +106,35 @@ export function Satellites() {
       <h2 id="sat-title" className="px-1 font-display text-[20px] font-semibold">
         {t("Кога минават спътниците", "When satellites pass")}
       </h2>
-      <p className="px-1 text-[16px] leading-snug">
-        {!ready ? (
-          loading ? (
-            t("Зареждаме…", "Loading…")
-          ) : (
-            error ?? t("Не успяхме да пресметнем кога минават спътниците.", "We couldn't work out when the satellites pass.")
-          )
-        ) : next ? (
-          <>
-            {t("Следващият спътник минава над България", "The next satellite passes over Bulgaria")}{" "}
-            <span className="font-semibold tabular-nums">{t(`след ${dur(next.t - now)}`, `in ${dur(next.t - now)}`)}</span>
-            {t(`, в ${clock(next.t)}. `, `, at ${clock(next.t)}. `)}
-            {t(`Пожарите от него се появяват на картата до ${dur(DATA_DELAY_MIN * 60e3)} по-късно.`, `Fires it sees show up on the map up to ${dur(DATA_DELAY_MIN * 60e3)} later.`)}
-          </>
+      {!ready ? (
+        loading ? (
+          <div className="skeleton mt-3 h-[300px] rounded-[20px]" aria-label={t("Зареждаме часовете на преминаване", "Loading pass times")} />
         ) : (
-          t("През следващите 24 часа няма преминаване, което да покажем.", "There is no pass to show in the next 24 hours.")
-        )}
-      </p>
+          <div className="mt-1 px-1">
+            <p className="text-[15px] leading-[1.4] text-muted">{error ?? t("Не успяхме да пресметнем кога минават спътниците.", "We couldn't work out when the satellites pass.")}</p>
+            <button
+              onClick={retry}
+              className="pressable mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-4 text-[15px] font-semibold text-accent-content"
+            >
+              <RotateCw size={18} strokeWidth={2} aria-hidden />
+              {t("Опитай пак", "Try again")}
+            </button>
+          </div>
+        )
+      ) : (
+        <p className="px-1 text-[16px] leading-[1.4]">
+          {next ? (
+            <>
+              {t("Следващият спътник минава над България", "The next satellite passes over Bulgaria")}{" "}
+              <span className="font-semibold tabular-nums">{t(`след ${dur(next.t - now)}`, `in ${dur(next.t - now)}`)}</span>
+              {t(`, в ${clock(next.t)}. `, `, at ${clock(next.t)}. `)}
+              {t(`Пожарите от него се появяват на картата до ${dur(DATA_DELAY_MIN * 60e3)} по-късно.`, `Fires it sees show up on the map up to ${dur(DATA_DELAY_MIN * 60e3)} later.`)}
+            </>
+          ) : (
+            t("През следващите 24 часа няма преминаване, което да покажем.", "There is no pass to show in the next 24 hours.")
+          )}
+        </p>
+      )}
 
       {ready && (
         <div className="mt-3 overflow-hidden rounded-[20px] bg-card">
@@ -207,9 +219,9 @@ export function Satellites() {
                     <span className="block text-[16px] font-medium tabular-nums">
                       {clock(l.t)} <span className="text-muted">·</span> {names(l)}
                     </span>
-                    <span className="block text-[13px] leading-snug text-muted">{detail}</span>
+                    <span className="block text-[13px] leading-[1.4] text-muted">{detail}</span>
                   </span>
-                  <span className="shrink-0 text-[14px] tabular-nums text-muted">
+                  <span className="shrink-0 whitespace-nowrap text-[14px] tabular-nums text-muted">
                     {l.t > now ? t(`след ${dur(l.t - now)}`, `in ${dur(l.t - now)}`) : t(`преди ${dur(now - l.t)}`, `${dur(now - l.t)} ago`)}
                   </span>
                 </li>
@@ -220,7 +232,7 @@ export function Satellites() {
       )}
 
       {ready && (
-        <p className="px-1 pt-3 text-[14px] leading-snug text-muted">
+        <p className="px-1 pt-3 text-[14px] leading-[1.45] text-muted">
           {gap
             ? t(
                 `Най-дългата пауза между две ясни преминавания е ${dur(gap.ms)}, от ${clock(gap.from)} до ${clock(gap.to)}. Малък огън, пламнал по това време, може да не се види преди ${clock(gap.to)}.`,
