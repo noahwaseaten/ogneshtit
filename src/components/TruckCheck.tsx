@@ -5,7 +5,7 @@ import { Truck, Search, CheckCircle2, AlertTriangle, XCircle, ChevronRight, Exte
 import { nf, sofiaTime, timeAgoLong, useJson } from "@/lib/client";
 import type { TicketDetail, TicketSearch, TicketSummary } from "@/lib/iag";
 import { Sheet } from "./Sheet";
-import { useNearestRdg } from "./rdg";
+import { telOf, useNearestRdg } from "./rdg";
 
 const LOOKALIKE: Record<string, string> = { А: "A", В: "B", Е: "E", К: "K", М: "M", Н: "H", О: "O", Р: "P", С: "C", Т: "T", У: "Y", Х: "X" };
 const norm = (s: string) => s.toUpperCase().replace(/[АВЕКМНОРСТУХ]/g, (c) => LOOKALIKE[c] ?? c).replace(/[^A-Z0-9]/g, "");
@@ -156,21 +156,22 @@ function PlateResult({ plate, tickets, onOpen }: { plate: string; tickets: Ticke
 
 function ReportActions() {
   const rdg = useNearestRdg();
-  const duty = rdg?.duty || rdg?.phone;
+  const tel = rdg?.phone ? telOf(rdg.phone) : "";
   return (
     <div className="rounded-2xl bg-surface p-4">
       <p className="text-[15px] font-semibold">Как да сигнализирате</p>
       <p className="pt-1 text-[14px] leading-snug text-muted">
-        Запишете номера, мястото и часа. Снимайте товара, ако е безопасно. После звъннете.
+        Запишете номера, мястото и часа. Снимайте товара, ако е безопасно. Регионалната дирекция по горите
+        отговаря в работно време, 112 по всяко време.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <a href="tel:112" className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#c7361f] px-3 text-[15px] font-semibold text-white">
           <Phone size={18} strokeWidth={2} aria-hidden />
           Звънни на 112
         </a>
-        {duty && rdg && (
+        {tel && rdg && (
           <a
-            href={`tel:${duty.replace(/\s/g, "")}`}
+            href={`tel:${tel}`}
             className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-line px-3 text-center text-[15px] font-semibold leading-tight"
           >
             <Phone size={18} strokeWidth={2} aria-hidden className="shrink-0" />

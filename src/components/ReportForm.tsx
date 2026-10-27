@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Axe, Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
 import { sofiaTime, useLocation } from "@/lib/client";
-import { nearestRdg, useRdgs } from "./rdg";
+import { nearestRdg, telOf, useRdgs } from "./rdg";
 
 const KINDS = ["Сеч без марки или позволително", "Извозване на дървесина", "Бракониерство", "Палене на огън", "Отпадъци в гората", "Друго"];
 
@@ -246,7 +246,7 @@ export function ReportForm() {
         {rdg && (
           <p className="pt-1 text-[13px] text-muted">
             {auto?.id === rdg.id ? (pos ? "Най-близката до мястото на сигнала. " : `Най-близката до ${loc.source === "gps" ? "вас" : loc.label}. `) : ""}
-            {rdg.duty && <>Дежурен телефон {rdg.duty}. </>}
+            {rdg.phone && <>Телефон {rdg.phone} в работно време. </>}
             {rdg.email}
           </p>
         )}
@@ -272,13 +272,13 @@ export function ReportForm() {
               Имейл до {rdg.name}
             </button>
           )}
-          {rdg && (rdg.duty || rdg.phone) && (
+          {rdg?.phone && (
             <a
-              href={`tel:${(rdg.duty || rdg.phone).replace(/\s/g, "")}`}
+              href={`tel:${telOf(rdg.phone)}`}
               className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-line px-4 text-[16px] font-semibold"
             >
               <Phone size={18} strokeWidth={2} aria-hidden />
-              {rdg.duty ? "Дежурен телефон" : "Телефон на РДГ"}
+              Обади се в {rdg.name}
             </a>
           )}
           <a

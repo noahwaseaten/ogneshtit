@@ -174,7 +174,7 @@ async function searchBy(by: 2 | 3, text: string): Promise<{ records: RawTicket[]
   cacheLife({ stale: 60, revalidate: 120, expire: 600 });
   const url = new URL(`${IAG}/e_tickets/search`);
   url.search = new URLSearchParams({ session: "000", user_id: "1", search_by: String(by), search_text: text, lng: "bg" }).toString();
-  const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(15000) });
+  const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(25000) });
   if (!res.ok) throw new Error(`ИАГ ${res.status}`);
   const data = (await res.json()) as { records?: RawTicket[]; records_count?: number };
   return { records: data.records ?? [], count: data.records_count ?? 0 };
@@ -289,7 +289,7 @@ export async function getTicket(type: string, id: string): Promise<TicketDetail>
 // ---------------------------------------------------------------------------------------------
 // Regional forest directorates (РДГ): who takes reports about illegal logging in each area.
 
-export type Rdg = (typeof RDG_SEATS)[number] & { phone: string; duty: string; email: string; site: string };
+export type Rdg = (typeof RDG_SEATS)[number] & { phone: string; email: string; site: string };
 
 async function getRdgContact(id: number) {
   "use cache";
@@ -301,14 +301,13 @@ async function getRdgContact(id: number) {
   const phone = strip(contact.match(/Телефон<\/strong>:\s*([^<]+)/)?.[1] ?? "");
   const email = contact.match(/mailto:([^"]+)"/)?.[1] ?? "";
   const site = contact.match(/Интернет страница<\/strong>:\s*<a href="([^"]+)"/)?.[1] ?? "";
-  const dutyText = strip(contact).match(/Дежурен телефон.{0,300}?(0\d[\d ]{6,12}\d)/)?.[1] ?? "";
-  return { phone, email, site, duty: dutyText.replace(/\s+/g, " ") };
+  return { phone, email, site };
 }
 
 export async function getRdgs(): Promise<Rdg[]> {
   return Promise.all(
     RDG_SEATS.map(async (s) => {
-      const c = await getRdgContact(s.id).catch(() => ({ phone: "", email: "", site: "", duty: "" }));
+      const c = await getRdgContact(s.id).catch(() => ({ phone: "", email: "", site: "" }));
       return { ...s, ...c };
     }),
   );

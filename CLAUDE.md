@@ -71,7 +71,7 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
 | Hotspots | NASA FIRMS area API (VIIRS SNPP/NOAA-20/NOAA-21, 2 days, needs key) or open 24 h CSVs | `src/lib/fires.ts`, `/api/fires` |
 | Fires per oblast | ИАГ `POST https://www.iag.bg/fires/lang/1/index` body `ajax=1&FromDate=YYYY-MM-DD&ToDate=…` → HTML tables | `src/lib/iag.ts`, `/api/fire-stats`, `/api/fire-history` |
 | Truck tickets | ИАГ `GET /e_tickets/search?session=000&user_id=1&search_by=2|3&search_text=<digits>&lng=bg` and `/e_tickets/get?...&type=&ticket_id=&digest=xxxn` (JSON) | `iag.ts`, `/api/ticket`, `/api/ticket/[type]/[id]` |
-| Regional directorates | ИАГ pages `/struct/lang/1/type/R/id/{2..17}/unit_single`, scraped weekly | `iag.ts`, `src/data/rdg.ts`, `/api/rdg` |
+| Regional directorates | ИАГ pages `/struct/lang/1/type/R/id/{2..17}/unit_single`, scraped weekly (office phone, e-mail; the "дежурен телефон" on some pages is for forestry operators, not the public) | `iag.ts`, `src/data/rdg.ts`, `/api/rdg` |
 | Weather warnings | MeteoAlarm feed `feeds-bulgaria` (НИМХ) | `src/lib/warnings.ts`, `/api/warnings` |
 | Place search | Open-Meteo geocoding, called from the browser | `LocationPicker.tsx` |
 | Oblast shapes | Natural Earth admin-1 → `scripts/oblasts.mjs` → `src/data/oblasts.ts` (do not edit by hand) | `BulgariaMap.tsx`, `src/lib/oblast.ts` |

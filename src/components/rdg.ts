@@ -24,3 +24,6 @@ export function useNearestRdg(at?: { lat: number; lon: number } | null) {
   const p = at ?? loc;
   return useMemo(() => nearestRdg(rdgs, p.lat, p.lon), [rdgs, p.lat, p.lon]);
 }
+
+/** First number of a field like "032 275 070 / 088 983 5035", ready for a tel: link. */
+export const telOf = (phone: string) => phone.split(/[/,;]/)[0].replace(/[^\d+]/g, "");

@@ -31,6 +31,13 @@ const noop = () => () => {};
 const fires = (n: number) => (n === 1 ? "1 пожар" : `${nf(n)} пожара`);
 const dkaText = (dka: number) => `${nf(dka)} дка`;
 const haText = (dka: number) => `${nf(dka / 10)} ха`;
+/** Bulgarian ordinal: 1-во, 2-ро, 3-то, 7-мо, 11-то, 21-во. */
+const ordinal = (n: number) => {
+  const t = n % 100;
+  const u = n % 10;
+  const sfx = t >= 11 && t <= 19 ? "то" : u === 1 ? "во" : u === 2 ? "ро" : u === 7 || u === 8 ? "мо" : "то";
+  return `${n}-${sfx}`;
+};
 
 export function FireStats() {
   // The current year is read on the device, so a page prerendered last year never shows stale choices.
@@ -228,10 +235,8 @@ function RegionDetail({ name, stats, history, bare }: { name: string; stats: Sta
             </dd>
           </div>
           <div>
-            <dt className="text-[13px] text-muted">Място в страната</dt>
-            <dd className="font-medium">
-              {rank}. от 28 по площ
-            </dd>
+            <dt className="text-[13px] text-muted">По изгоряла площ</dt>
+            <dd className="font-medium">{ordinal(rank)} място от 28</dd>
           </div>
           <div>
             <dt className="text-[13px] text-muted">Върхов пожар</dt>
