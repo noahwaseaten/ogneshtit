@@ -39,6 +39,31 @@ export function ReportForm() {
   }, [photos]);
   useEffect(() => () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.url)), []);
 
+  // Photos shared into the app from the gallery (see the share target in public/sw.js).
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const n = Number(sp.get("shared") ?? 0);
+    const text = sp.get("text");
+    if (!n && !text) return;
+    (async () => {
+      if (text) setDesc(text);
+      if (n && "caches" in window) {
+        const cache = await caches.open("ogneshtit-shared");
+        const files: Photo[] = [];
+        for (let i = 0; i < n; i++) {
+          const res = await cache.match(`/shared/${i}`);
+          if (!res) continue;
+          const blob = await res.blob();
+          const file = new File([blob], decodeURIComponent(res.headers.get("x-name") ?? `photo-${i}.jpg`), { type: blob.type });
+          files.push({ file, url: URL.createObjectURL(file) });
+          await cache.delete(`/shared/${i}`);
+        }
+        setPhotos(files);
+      }
+      window.history.replaceState(null, "", window.location.pathname);
+    })();
+  }, []);
+
   const locate = () => {
     if (!("geolocation" in navigator)) return setLocErr(true);
     setLocating(true);

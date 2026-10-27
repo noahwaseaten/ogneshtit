@@ -1,102 +1,75 @@
 import type { Metadata } from "next";
-import { ExternalLink } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Logo, REPO, ThemeControl } from "@/components/Shell";
+import { InstallHelp } from "@/components/InstallHelp";
+import { Alerts } from "@/components/Alerts";
 
 export const metadata: Metadata = {
-  title: "За приложението",
-  description: "Откъде са данните в ОгнеЩит, какво пазим и как да промените темата.",
+  title: "За ОгнеЩит",
+  description: "Кой е направил ОгнеЩит, откъде са данните и настройки.",
 };
 
 const SOURCES = [
-  { name: "Open-Meteo", what: "Времето за последните 45 дни и прогнозата, качеството на въздуха, търсенето на населени места", href: "https://open-meteo.com" },
-  { name: "NASA FIRMS", what: "Огнища, засечени от спътниците VIIRS през последните 48 часа", href: "https://firms.modaps.eosdis.nasa.gov" },
-  { name: "Изпълнителна агенция по горите", what: "Горските пожари по области от 2007 г., превозните билети, контактите на регионалните дирекции", href: "https://www.iag.bg" },
-  { name: "НИМХ чрез MeteoAlarm", what: "Предупрежденията за опасно време", href: "https://meteoalarm.org" },
-  { name: "EFFIS", what: "Нивата на опасност, с които сравняваме индекса за пожарна опасност", href: "https://forest-fire.emergency.copernicus.eu" },
-  { name: "Natural Earth", what: "Границите на областите", href: "https://www.naturalearthdata.com" },
+  ["Open-Meteo", "време и въздух", "https://open-meteo.com"],
+  ["NASA FIRMS", "огън от спътник", "https://firms.modaps.eosdis.nasa.gov"],
+  ["ИАГ", "пожари, превозни билети", "https://www.iag.bg"],
+  ["НИМХ", "предупреждения", "https://meteoalarm.org"],
+  ["EFFIS", "нива на опасност", "https://forest-fire.emergency.copernicus.eu"],
 ];
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-[28px] bg-card p-5 shadow-[var(--shadow)] lg:p-6">
-      <h2 className="font-display text-[20px] font-semibold">{title}</h2>
-      <div className="pt-3">{children}</div>
-    </section>
-  );
-}
+const row = "flex min-h-12 items-center justify-between gap-3 px-4 py-3";
 
 export default function Za() {
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex items-center gap-3 px-1 pt-2">
-        <Logo size={44} />
-        <div>
-          <h1 className="font-display text-[32px] font-bold leading-tight tracking-[-0.01em]">ОгнеЩит</h1>
-          <p className="text-[15px] text-muted">Горските пожари в България, на разбираем език.</p>
-        </div>
+    <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <header className="flex flex-col items-center gap-2 pt-4 text-center">
+        <Logo size={56} />
+        <h1 className="font-display text-[28px] font-bold leading-tight">ОгнеЩит</h1>
+        <p className="text-[16px] text-muted">
+          Направено от{" "}
+          <a href="https://noahwaseaten.com/" target="_blank" rel="noreferrer" className="font-semibold text-content underline decoration-line underline-offset-4 hover:decoration-current">
+            Камен
+          </a>
+        </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <div className="flex flex-col gap-6">
-          <Card title="Тема">
-            <ThemeControl />
-            <p className="pt-2 text-[14px] text-muted">„Авто“ следва настройката на телефона или компютъра.</p>
-          </Card>
+      <section aria-labelledby="look" className="flex flex-col gap-2">
+        <h2 id="look" className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">
+          Изглед
+        </h2>
+        <ThemeControl />
+      </section>
 
-          <Card title="Какво прави приложението">
-            <div className="flex flex-col gap-3 text-[16px] leading-snug">
-              <p>Казва колко лесно може да пламне гората днес там, където сте, и какво да внимавате.</p>
-              <p>Показва къде спътниците са засекли огън през последните два дни.</p>
-              <p>Проверява дали камион с дървесина има превозен билет и помага да подадете сигнал за незаконна сеч.</p>
-              <p>Работи и без интернет: последните данни и екранът с 112 се пазят в телефона.</p>
-            </div>
-          </Card>
+      <InstallHelp />
 
-          <Card title="Какво пазим">
-            <p className="text-[16px] leading-snug">
-              Нищо на сървър. Избраното място, темата и последните данни стоят само на вашето устройство. Координатите
-              закръгляме до около 1 км, преди да поискаме прогнозата. Сигналите се изпращат от вашия имейл или телефон,
-              не от нас.
-            </p>
-          </Card>
-        </div>
+      <Alerts />
 
-        <div className="flex flex-col gap-6">
-          <Card title="Откъде са данните">
-            <ul className="-mx-1 flex flex-col">
-              {SOURCES.map((s) => (
-                <li key={s.name}>
-                  <a href={s.href} target="_blank" rel="noreferrer" className="flex min-h-12 items-start justify-between gap-3 rounded-xl px-1 py-2 hover:bg-line/50">
-                    <span>
-                      <span className="block text-[16px] font-medium">{s.name}</span>
-                      <span className="block text-[14px] leading-snug text-muted">{s.what}</span>
-                    </span>
-                    <ExternalLink size={16} strokeWidth={2} className="mt-1 shrink-0 text-muted" aria-hidden />
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <p className="pt-3 text-[14px] leading-snug text-muted">
-              ОгнеЩит не е официален източник. При опасност следвайте указанията на 112, ГДПБЗН и горските служители.
-            </p>
-          </Card>
+      <section aria-labelledby="data" className="flex flex-col gap-2">
+        <h2 id="data" className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">
+          Данни
+        </h2>
+        <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
+          {SOURCES.map(([name, what, href]) => (
+            <li key={name}>
+              <a href={href} target="_blank" rel="noreferrer" className={`${row} hover:bg-line/40`}>
+                <span className="text-[16px] font-medium">{name}</span>
+                <span className="flex items-center gap-1.5 text-[14px] text-muted">
+                  {what}
+                  <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p className="px-1 text-[14px] leading-snug text-muted">
+          ОгнеЩит не е официален източник. Нищо за вас не се пази на сървър: мястото и настройките стоят само в телефона.
+        </p>
+      </section>
 
-          <Card title="Отворен код">
-            <p className="text-[16px] leading-snug">
-              Кодът е публичен под лиценз MIT. Грешки и идеи може да пишете в GitHub.
-            </p>
-            <a
-              href={REPO}
-              target="_blank"
-              rel="noreferrer"
-              className="pressable mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-line px-4 text-[15px] font-semibold"
-            >
-              Към GitHub
-              <ExternalLink size={16} strokeWidth={2} aria-hidden />
-            </a>
-          </Card>
-        </div>
-      </div>
+      <a href={REPO} target="_blank" rel="noreferrer" className={`${row} rounded-[20px] bg-card shadow-[var(--shadow)] hover:bg-line/40`}>
+        <span className="text-[16px] font-medium">Отворен код в GitHub</span>
+        <ArrowUpRight size={16} strokeWidth={2} className="text-muted" aria-hidden />
+      </a>
     </div>
   );
 }

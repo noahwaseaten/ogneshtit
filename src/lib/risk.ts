@@ -130,3 +130,20 @@ async function getAir(lat: number, lon: number): Promise<Air | null> {
     return null;
   }
 }
+
+export type DangerMap = { regions: { code: string; name: string; fwi: number; danger: string; tomorrow: string }[]; updated: string };
+
+/** Today's danger at each oblast's centre. Each point is cached on its own, like a normal lookup. */
+export async function getDangerMap(): Promise<DangerMap> {
+  const { OBLASTS } = await import("@/data/oblasts");
+  const r = (x: number) => Math.round(x * 100) / 100;
+  const all = await Promise.all(
+    OBLASTS.map(async (o) => {
+      const risk = await getRisk(r(o.lat), r(o.lon)).catch(() => null);
+      return risk && { code: o.code, name: o.name, fwi: risk.today.fwi, danger: risk.today.danger, tomorrow: risk.forecast[0]?.danger ?? risk.today.danger };
+    }),
+  );
+  const regions = all.filter((x): x is NonNullable<typeof x> => !!x);
+  if (!regions.length) throw new Error("no weather");
+  return { regions, updated: new Date().toISOString() };
+}

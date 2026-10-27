@@ -3,8 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
-  // The map page used to live at /karta.
-  redirects: async () => [{ source: "/karta", destination: "/pozhari", permanent: true }],
   headers: async () => [
     {
       source: "/:path*",

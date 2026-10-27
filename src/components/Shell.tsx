@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flame, Map, LifeBuoy, Settings2, Monitor, Sun, Moon } from "lucide-react";
+import { Flame, Map, BarChart3, LifeBuoy, Info, Monitor, Sun, Moon } from "lucide-react";
+import { InstallButton } from "./Install";
 import { useTheme, type ThemeChoice } from "@/lib/client";
 
 const NAV = [
   { href: "/", label: "Днес", Icon: Flame },
-  { href: "/pozhari", label: "Пожари", Icon: Map },
+  { href: "/karta", label: "Карта", Icon: Map },
+  { href: "/pozhari", label: "Статистика", Icon: BarChart3 },
   { href: "/pomogni", label: "Помогни", Icon: LifeBuoy },
-  { href: "/za", label: "Още", long: "За приложението", Icon: Settings2 },
 ];
 
 export const REPO = "https://github.com/noahwaseaten/ogneshtit";
@@ -40,7 +41,7 @@ export function Sidebar() {
       <p className="px-2 pt-2 text-[13px] leading-snug text-muted">Горски пожари в България: днес, наблизо и какво да направите.</p>
       <nav aria-label="Основна навигация" className="mt-8">
         <ul className="flex flex-col gap-1">
-          {NAV.map(({ href, label, long, Icon }) => {
+          {NAV.map(({ href, label, Icon }) => {
             const active = isActive(path, href);
             return (
               <li key={href}>
@@ -52,7 +53,7 @@ export function Sidebar() {
                   }`}
                 >
                   <Icon size={20} strokeWidth={active ? 2.25 : 1.75} aria-hidden />
-                  {long ?? label}
+                  {label}
                 </Link>
               </li>
             );
@@ -60,12 +61,50 @@ export function Sidebar() {
         </ul>
       </nav>
       <div className="mt-auto flex flex-col gap-3">
+        <InstallButton />
+        <Link
+          href="/za"
+          aria-current={isActive(path, "/za") ? "page" : undefined}
+          className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium text-muted hover:bg-line/60 hover:text-content aria-[current=page]:text-accent"
+        >
+          <Info size={20} strokeWidth={1.75} aria-hidden />
+          За ОгнеЩит
+        </Link>
         <ThemeControl compact />
         <a href="tel:112" className="pressable flex min-h-11 items-center justify-center rounded-xl bg-[#c7361f] text-[15px] font-semibold text-white">
           Спешно: 112
         </a>
       </div>
     </aside>
+  );
+}
+
+/** Phone top bar: name on the left, install and "about" on the right. */
+export function TopBar() {
+  const path = usePathname();
+  return (
+    <header
+      className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur-xl supports-[not(backdrop-filter:blur(1px))]:bg-surface lg:hidden"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      <div className="mx-auto flex h-12 max-w-xl items-center justify-between px-3">
+        <Link href="/" className="flex items-center gap-2 rounded-lg px-1">
+          <Logo size={24} />
+          <span className="font-display text-[17px] font-bold">ОгнеЩит</span>
+        </Link>
+        <div className="flex items-center gap-1">
+          <InstallButton compact />
+          <Link
+            href="/za"
+            aria-label="За ОгнеЩит и настройки"
+            aria-current={path === "/za" ? "page" : undefined}
+            className="pressable grid size-11 place-items-center rounded-full text-muted hover:bg-line/60 aria-[current=page]:text-accent"
+          >
+            <Info size={22} strokeWidth={1.75} aria-hidden />
+          </Link>
+        </div>
+      </div>
+    </header>
   );
 }
 

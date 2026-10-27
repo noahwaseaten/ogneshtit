@@ -5,6 +5,8 @@ import { CloudRain, Droplets, Thermometer, Wind, ShieldAlert, RotateCw, Share2, 
 import { DANGERS, dangerByKey, windFrom } from "@/lib/danger";
 import { inPlace, nf, timeAgoLong, weekday, type Loc } from "@/lib/client";
 import type { RiskResponse } from "@/lib/risk";
+import { oblastAt } from "@/lib/oblast";
+import { OBLASTS } from "@/data/oblasts";
 
 const daysWord = (n: number) => (n === 0 ? "Вали днес" : n === 1 ? "1 ден без дъжд" : `${n} дни без дъжд`);
 
@@ -52,7 +54,7 @@ export function RiskCard({
           <p id="risk-title" className="pt-1 text-[15px] font-medium opacity-90">
             Опасност от пожар днес {place}
           </p>
-          <ShareButton text={`Опасност от горски пожар днес ${place}: ${d.label.toLowerCase()}. ${d.advice}`} />
+          <ShareButton text={`Опасност от горски пожар днес ${place}: ${d.label.toLowerCase()}.`} loc={loc} />
         </div>
         <p className="font-display text-[44px] font-bold leading-[1.05] tracking-[-0.02em] lg:text-[52px]">{d.label}</p>
         <p className="max-w-[34ch] pt-2 text-[16px] font-medium leading-snug opacity-95">{d.meaning}</p>
@@ -130,10 +132,19 @@ export function RiskCard({
   );
 }
 
-function ShareButton({ text }: { text: string }) {
+/** Shares a link whose preview image shows today's level and the next days for this place.
+ *  A GPS position is never shared: it is replaced by the centre of its oblast. */
+function ShareButton({ text, loc }: { text: string; loc: Loc }) {
   const [done, setDone] = useState(false);
   const share = async () => {
-    const url = window.location.origin;
+    const o = loc.source === "gps" ? oblastAt(loc.lat, loc.lon) : null;
+    const c = o ? OBLASTS.find((x) => x.code === o.code)! : null;
+    const q = new URLSearchParams(
+      c
+        ? { lat: c.lat.toFixed(2), lon: c.lon.toFixed(2), n: `област ${c.name.replace(/ (град|област)$/, "")}` }
+        : { lat: loc.lat.toFixed(2), lon: loc.lon.toFixed(2), n: loc.label },
+    );
+    const url = `${window.location.origin}/s?${q}`;
     try {
       if (navigator.share) await navigator.share({ title: "ОгнеЩит", text, url });
       else {

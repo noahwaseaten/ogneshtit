@@ -6,8 +6,9 @@ import { oblastAt } from "@/lib/oblast";
 import type { RiskResponse } from "@/lib/risk";
 import { LocationPicker } from "./LocationPicker";
 import { RiskCard, Forecast } from "./RiskCard";
-import { FiresNear } from "./FiresNear";
+import { FiresSummary } from "./FiresNear";
 import { Conditions } from "./Conditions";
+import { Alerts } from "./Alerts";
 
 const today = () =>
   new Intl.DateTimeFormat("bg-BG", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Sofia" }).format(new Date());
@@ -33,7 +34,10 @@ export function Today() {
         <Conditions risk={risk.data} oblast={oblast} />
       </div>
       <div className="min-w-0 lg:sticky lg:top-8">
-        <FiresNear loc={loc} />
+        <div className="flex flex-col gap-8">
+          <FiresSummary loc={loc} />
+          <Alerts />
+        </div>
       </div>
     </div>
   );
