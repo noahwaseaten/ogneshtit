@@ -83,7 +83,7 @@ export function Alerts() {
   if (state === "loading" || state === "unsupported") return null;
 
   return (
-    <div className="rounded-[20px] bg-card p-4 shadow-[var(--shadow)]">
+    <div className="rounded-[20px] bg-card p-4">
       <div className="flex items-start gap-3">
         {state === "on" ? <Bell size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-accent" aria-hidden /> : <BellOff size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-muted" aria-hidden />}
         <div className="min-w-0 flex-1">

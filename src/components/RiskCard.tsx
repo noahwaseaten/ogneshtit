@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CloudRain, Droplets, Thermometer, Wind, ShieldAlert, RotateCw, Share2, Check, ChevronDown } from "lucide-react";
-import { DANGERS, dangerByKey, windFrom } from "@/lib/danger";
+import { DANGERS, dangerByKey, windFrom, windShort } from "@/lib/danger";
 import { inPlace, nf, timeAgoLong, weekday, type Loc } from "@/lib/client";
 import type { RiskResponse } from "@/lib/risk";
 import { oblastAt } from "@/lib/oblast";
@@ -26,9 +26,9 @@ export function RiskCard({
   loc: Loc;
 }) {
   if (!data) {
-    if (loading) return <div className="skeleton h-[300px] rounded-[28px]" aria-label="Зареждаме опасността за днес" />;
+    if (loading) return <div className="skeleton h-[300px] rounded-[20px]" aria-label="Зареждаме опасността за днес" />;
     return (
-      <div className="rounded-[28px] bg-card p-5 shadow-[var(--shadow)]">
+      <div className="rounded-[20px] bg-card p-5">
         <p className="font-display text-lg font-semibold">Не успяхме да изчислим опасността</p>
         <p className="pt-1 text-[15px] text-muted">{error}</p>
         <button
@@ -49,15 +49,18 @@ export function RiskCard({
   return (
     <section aria-labelledby="risk-title" className="enter">
       {/* Signature element: the day's danger, as big and plain as a road sign. */}
-      <div className="relative overflow-hidden rounded-[28px] p-5 lg:p-6" style={{ background: d.color, color: d.onColor }}>
+      <div className="relative overflow-hidden rounded-[24px] p-5 lg:p-6" style={{ background: d.color, color: d.onColor }}>
         <div className="flex items-start justify-between gap-3">
-          <p id="risk-title" className="pt-1 text-[15px] font-medium opacity-90">
-            Опасност от пожар днес {place}
-          </p>
+          <h2 id="risk-title" className="font-display text-[44px] font-bold leading-[1.05] tracking-[-0.02em] lg:text-[52px]">
+            {d.label}
+            <span className="sr-only"> опасност от пожар днес {place}</span>
+          </h2>
           <ShareButton text={`Опасност от горски пожар днес ${place}: ${d.label.toLowerCase()}.`} loc={loc} />
         </div>
-        <p className="font-display text-[44px] font-bold leading-[1.05] tracking-[-0.02em] lg:text-[52px]">{d.label}</p>
-        <p className="max-w-[34ch] pt-2 text-[16px] font-medium leading-snug opacity-95">{d.meaning}</p>
+        <p aria-hidden className="pt-1 text-[17px] font-semibold">
+          опасност от пожар днес {place}
+        </p>
+        <p className="max-w-[34ch] pt-3 text-[16px] leading-snug opacity-95">{d.meaning}</p>
 
         {/* Where today sits among the six levels. */}
         <div className="pt-5" role="img" aria-label={`Ниво ${d.index + 1} от 6`}>
@@ -76,7 +79,7 @@ export function RiskCard({
           </div>
         </div>
 
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-2 pt-5 text-[15px] font-medium tabular-nums" aria-label="Времето днес по обяд">
+        <ul className="grid grid-cols-2 gap-x-3 gap-y-2 pt-5 text-[15px] font-medium tabular-nums [&>li]:whitespace-nowrap [&_svg]:shrink-0" aria-label="Времето днес по обяд">
           <li className="inline-flex items-center gap-2">
             <Thermometer size={18} strokeWidth={1.75} aria-hidden />
             {t.temp}°C
@@ -87,8 +90,11 @@ export function RiskCard({
           </li>
           <li className="inline-flex items-center gap-2">
             <Wind size={18} strokeWidth={1.75} aria-hidden />
-            <span>
-              {t.wind} км/ч <span className="opacity-85">от {windFrom(t.windDir)}</span>
+            <span aria-hidden>
+              {t.wind} км/ч, {windShort(t.windDir)}
+            </span>
+            <span className="sr-only">
+              Вятър {t.wind} км/ч от {windFrom(t.windDir)}
             </span>
           </li>
           <li className="inline-flex items-center gap-2">
@@ -172,11 +178,11 @@ export function Forecast({ data }: { data: RiskResponse }) {
       <h2 id="fc-title" className="px-1 font-display text-[20px] font-semibold">
         Следващите 5 дни
       </h2>
-      <ol className="mt-3 grid grid-cols-5 gap-2">
+      <ol className="mt-3 grid grid-cols-5 rounded-[20px] bg-card py-1">
         {data.forecast.map((f) => {
           const d = dangerByKey(f.danger);
           return (
-            <li key={f.date} className="flex flex-col items-center gap-2 rounded-2xl bg-card px-1 py-3 shadow-[var(--shadow)]">
+            <li key={f.date} className="flex flex-col items-center gap-1.5 px-0.5 py-3">
               <span className="text-[13px] font-medium capitalize text-muted">{weekday(f.date)}</span>
               {/* Colour plus a level number: never colour alone. */}
               <span
@@ -186,7 +192,7 @@ export function Forecast({ data }: { data: RiskResponse }) {
               >
                 {d.index + 1}
               </span>
-              <span className="text-center text-[12px] font-medium leading-tight">{d.label}</span>
+              <span className="text-center text-[12px] font-medium leading-tight [text-wrap:balance]">{d.label}</span>
               <span className="text-[12px] tabular-nums text-muted" aria-hidden>
                 {f.temp}°
               </span>

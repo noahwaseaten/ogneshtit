@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Axe, Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
+import { Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
 import { sofiaTime, useLocation } from "@/lib/client";
 import { nearestRdg, telOf, useRdgs } from "./rdg";
 
@@ -123,9 +123,8 @@ export function ReportForm() {
   const field = "w-full rounded-2xl border border-line bg-surface px-4 text-[16px] outline-none placeholder:text-muted focus:border-accent";
 
   return (
-    <section aria-labelledby="report-title" className="rounded-[28px] bg-card p-5 shadow-[var(--shadow)] lg:p-6">
-      <div className="flex items-center gap-3">
-        <Axe size={26} strokeWidth={1.5} aria-hidden />
+    <section aria-labelledby="report-title" className="rounded-[20px] bg-card p-5 lg:p-6">
+      <div>
         <h2 id="report-title" className="font-display text-[22px] font-semibold leading-tight">
           Незаконна сеч или бракониерство?
         </h2>
@@ -180,7 +179,7 @@ export function ReportForm() {
         {locErr && <p className="pt-2 text-[14px] text-ember">Няма достъп до местоположението. Опишете мястото по-долу.</p>}
         <label className="mt-2 block">
           <span className="sr-only">Описание на мястото</span>
-          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Най-близкото село, път или местност" className={`${field} min-h-12`} />
+          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Село, път или местност" className={`${field} min-h-12`} />
         </label>
       </div>
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Phone, Ban, Truck, Axe, ChevronRight } from "lucide-react";
+import { Phone, Truck, Axe, ChevronRight } from "lucide-react";
 import { MyCoords } from "@/components/MyCoords";
 
 const ACTIONS = [
@@ -27,7 +27,7 @@ export default function Pomogni() {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
           {/* Emergency first: biggest target, highest contrast. */}
-          <section aria-labelledby="fire-title" className="rounded-[28px] bg-[#8a1a12] p-5 text-white lg:row-span-2 lg:p-6">
+          <section aria-labelledby="fire-title" className="rounded-[24px] bg-[#8a1a12] p-5 text-white lg:row-span-2 lg:p-6">
             <h2 id="fire-title" className="font-display text-[24px] font-semibold">
               Виждате дим или огън?
             </h2>
@@ -50,14 +50,12 @@ export default function Pomogni() {
             </p>
           </section>
 
-          <nav aria-label="Други действия" className="overflow-hidden rounded-[28px] bg-card shadow-[var(--shadow)]">
+          <nav aria-label="Други действия" className="overflow-hidden rounded-[20px] bg-card">
             <ul className="divide-y divide-line">
               {ACTIONS.map(({ href, Icon, title, text }) => (
                 <li key={href}>
                   <Link href={href} className="flex min-h-20 items-center gap-4 px-5 py-4 hover:bg-line/40 active:bg-line">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-line">
-                      <Icon size={22} strokeWidth={1.75} aria-hidden />
-                    </span>
+                    <Icon size={24} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[17px] font-semibold leading-tight">{title}</span>
                       <span className="block pt-0.5 text-[14px] leading-snug text-muted">{text}</span>
@@ -69,9 +67,8 @@ export default function Pomogni() {
             </ul>
           </nav>
 
-          <section aria-labelledby="rules-title" className="rounded-[28px] bg-card p-5 shadow-[var(--shadow)] lg:p-6">
-            <div className="flex items-center gap-3">
-              <Ban size={24} strokeWidth={1.75} aria-hidden />
+          <section aria-labelledby="rules-title" className="rounded-[20px] bg-card p-5 lg:p-6">
+            <div>
               <h2 id="rules-title" className="font-display text-[20px] font-semibold">
                 Какво е забранено
               </h2>

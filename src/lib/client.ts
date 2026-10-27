@@ -183,6 +183,8 @@ export function applyTheme(t: ThemeChoice) {
     else localStorage.setItem(THEME_KEY, t);
   } catch {}
   const root = document.documentElement;
+  root.classList.add("theme-switching");
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
   if (t === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", t);
   themeListeners.forEach((l) => l());

@@ -14,7 +14,10 @@
   --accent: #1f5b3e; /* fir */
   --accent-content: #ffffff;
   --ember: #c7361f;
-  --shadow: 0 1px 2px oklch(0 0 0 / 0.06), 0 4px 16px oklch(0 0 0 / 0.05);
+  /* Surfaces are separated by tone, not by shadows. Only things that float (the selected
+     segment, sheets) get --lift. */
+  --shadow: none;
+  --lift: 0 1px 3px oklch(0 0 0 / 0.12);
   --land: #e4e9e1;
   --land-line: oklch(0 0 0 / 0.14);
 
@@ -45,7 +48,8 @@
     --ember: #ff7a5c;
     --land: #223029;
     --land-line: oklch(1 0 0 / 0.16);
-    --shadow: 0 0 0 1px oklch(1 0 0 / 0.06);
+    --shadow: none;
+    --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
     color-scheme: dark;
   }
 }
@@ -61,7 +65,8 @@
   --ember: #ff7a5c;
   --land: #223029;
   --land-line: oklch(1 0 0 / 0.16);
-  --shadow: 0 0 0 1px oklch(1 0 0 / 0.06);
+  --shadow: none;
+  --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
   color-scheme: dark;
 }
 
@@ -172,9 +177,10 @@ p {
   filter: blur(4px);
 }
 
-/* Map regions: colour changes ease, hover lifts the edge. */
-.region {
-  transition: fill 240ms var(--ease-out), stroke 150ms ease, opacity 150ms ease;
+/* Switching theme swaps every colour at once; transitions would show half-switched patches. */
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
 }
 
 .no-scrollbar {

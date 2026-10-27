@@ -20,7 +20,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default function Shared() {
   return (
-    <Suspense fallback={<div className="skeleton h-[300px] rounded-[28px]" />}>
+    <Suspense fallback={<div className="skeleton h-[300px] rounded-[20px]" />}>
       <OpenShared />
     </Suspense>
   );

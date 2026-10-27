@@ -15,8 +15,8 @@ import { Sheet } from "./Sheet";
 type Layer = "fires" | "danger" | "burnt";
 const LAYERS: { key: Layer; label: string }[] = [
   { key: "fires", label: "Огън сега" },
-  { key: "danger", label: "Опасност днес" },
-  { key: "burnt", label: "Изгоряло тази година" },
+  { key: "danger", label: "Опасност" },
+  { key: "burnt", label: "Изгоряло" },
 ];
 
 const BURNT = [
@@ -67,9 +67,9 @@ export function MapView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-col gap-3 px-1 pt-1 lg:flex-row lg:items-end lg:justify-between">
-        <h1 className="font-display text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-[36px]">Карта</h1>
-        <div role="radiogroup" aria-label="Какво да покаже картата" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <h1 className="sr-only font-display text-[36px] font-bold leading-tight lg:not-sr-only">Карта</h1>
+        <div role="radiogroup" aria-label="Какво да покаже картата" className="grid grid-cols-3 rounded-full bg-line p-1 lg:w-[420px]">
           {LAYERS.map((l) => (
             <button
               key={l.key}
@@ -79,8 +79,8 @@ export function MapView() {
                 setLayer(l.key);
                 setRegion(null);
               }}
-              className={`pressable min-h-10 shrink-0 rounded-full px-4 text-[15px] font-semibold transition-colors duration-150 ${
-                layer === l.key ? "bg-content text-surface" : "bg-card text-content shadow-[var(--shadow)] hover:bg-line"
+              className={`min-h-10 truncate rounded-full px-2 text-[15px] font-semibold ${
+                layer === l.key ? "bg-card text-content shadow-[var(--lift)]" : "text-muted active:bg-card/50"
               }`}
             >
               {l.label}
@@ -90,10 +90,11 @@ export function MapView() {
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-6">
-        <div className="overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
-          <div className="p-2 lg:p-3">
+        <div className="-mx-4 overflow-hidden bg-card sm:mx-0 sm:rounded-[20px]">
+          <div>
             <BulgariaMap
               zoomable
+              className="aspect-square sm:aspect-[1000/657]"
               ariaLabel="Карта на България"
               fill={fill}
               points={layer === "fires" ? spots.points : undefined}
@@ -108,7 +109,7 @@ export function MapView() {
         </div>
 
         <aside className="flex flex-col gap-4">
-          {wide && regionInfo && <div className="rounded-[20px] bg-card p-5 shadow-[var(--shadow)]">{regionInfo}</div>}
+          {wide && regionInfo && <div className="rounded-[20px] bg-card p-5">{regionInfo}</div>}
           {layer === "fires" && <FiresSide loc={loc} spots={spots} onPick={(s) => setPicked([s])} />}
           {layer === "danger" && (
             <p className="px-1 text-[15px] leading-snug text-muted">
@@ -201,7 +202,7 @@ function FiresSide({ loc, spots, onPick }: { loc: Loc; spots: ReturnType<typeof 
       </p>
       {spots.all.length > 0 && (
         <div>
-          <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card px-2 shadow-[var(--shadow)]">
+          <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card px-2">
             {list.map((s) => (
               <li key={s.id}>
                 <SpotRow s={s} onClick={() => onPick(s)} />

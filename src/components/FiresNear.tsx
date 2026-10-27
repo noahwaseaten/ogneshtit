@@ -40,36 +40,47 @@ export function useSpots(loc: Loc) {
   return { ...res, all, near: all.filter((h) => h.km <= NEAR_KM), points, byId };
 }
 
-/** Compact block for the home screen: a sentence, a small map, and a way into the full map. */
+/**
+ * Home screen fires: the sentence that matters and a map you can tap without leaving the page.
+ * Pan and zoom live on the Карта tab, where the map can take the whole screen without
+ * fighting the page scroll.
+ */
 export function FiresSummary({ loc }: { loc: Loc }) {
-  const { data, all, near, points, loading } = useSpots(loc);
+  const { data, all, near, points, byId, loading } = useSpots(loc);
+  const [picked, setPicked] = useState<Spot[] | null>(null);
   const who = loc.source === "gps" ? "вас" : loc.label;
   return (
     <section aria-labelledby="fires-title" className="enter">
-      <h2 id="fires-title" className="px-1 font-display text-[20px] font-semibold">
-        Огън, видян от спътник
-      </h2>
-      <Link href="/karta" className="group mt-3 block overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)] hover:bg-line/30">
-        <div className="flex items-center justify-between gap-3 px-4 pb-1 pt-4">
-          <p className="text-[16px] leading-snug">
-            {!data ? (
-              loading ? "Зареждаме…" : "Данните не се заредиха."
-            ) : near.length === 0 ? (
-              <>Няма засечен огън до {NEAR_KM} км от {who} за {data.hours} ч.</>
-            ) : (
-              <>
-                <span className="font-semibold text-ember">{firesWord(near.length)}</span> до {NEAR_KM} км от {who} за {data.hours} ч.
-              </>
-            )}
-            {data && <span className="text-muted"> В страната: {all.length}.</span>}
-          </p>
-          <ArrowRight size={20} strokeWidth={1.75} className="shrink-0 text-muted transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
-        </div>
-        <div className="pointer-events-none p-2">
-          <BulgariaMap ariaLabel="Малка карта с огнищата" points={points} me={{ lat: loc.lat, lon: loc.lon, radiusKm: NEAR_KM }} cities={false} />
-        </div>
-        <p className="border-t border-line px-4 py-3 text-[15px] font-medium text-accent">Отвори картата</p>
-      </Link>
+      <div className="flex items-baseline justify-between gap-3 px-1">
+        <h2 id="fires-title" className="font-display text-[20px] font-semibold">
+          Огън наблизо
+        </h2>
+        <Link href="/karta" className="inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-accent">
+          Цяла карта
+          <ArrowRight size={16} strokeWidth={2} aria-hidden />
+        </Link>
+      </div>
+      <p className="px-1 text-[16px] leading-snug">
+        {!data ? (
+          loading ? "Зареждаме…" : "Данните от спътниците не се заредиха."
+        ) : near.length === 0 ? (
+          <>Спътниците не са видели огън до {NEAR_KM} км от {who} за {data.hours} часа.</>
+        ) : (
+          <>
+            <span className="font-semibold text-ember">{firesWord(near.length)}</span> до {NEAR_KM} км от {who} за {data.hours} часа.
+          </>
+        )}
+      </p>
+      <div className="mt-3 overflow-hidden rounded-[20px] bg-card p-2">
+        <BulgariaMap
+          ariaLabel={`Карта с ${firesWord(all.length)} в България`}
+          points={points}
+          onPoints={(pts) => setPicked(pts.map((p) => byId.get(p.id)!).filter(Boolean))}
+          me={{ lat: loc.lat, lon: loc.lon, radiusKm: NEAR_KM }}
+          cities={false}
+        />
+      </div>
+      <SpotSheet spots={picked} who={who} onClose={() => setPicked(null)} onPick={(s) => setPicked([s])} />
     </section>
   );
 }

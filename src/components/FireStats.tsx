@@ -79,7 +79,7 @@ export function FireStats() {
               setRegion(null);
             }}
             className={`pressable min-h-11 shrink-0 rounded-full px-4 text-[15px] font-semibold tabular-nums transition-colors duration-150 ${
-              y === year ? "bg-content text-surface" : "bg-card text-content shadow-[var(--shadow)] hover:bg-line"
+              y === year ? "bg-content text-surface" : "bg-card text-content hover:bg-line"
             }`}
           >
             {y}
@@ -87,9 +87,9 @@ export function FireStats() {
         ))}
       </div>
 
-      {!s && (stats.loading || !year) && <div className="skeleton h-[520px] rounded-[28px]" aria-label="Зареждаме данните" />}
+      {!s && (stats.loading || !year) && <div className="skeleton h-[520px] rounded-[20px]" aria-label="Зареждаме данните" />}
       {!s && year > 0 && !stats.loading && (
-        <div className="rounded-[20px] bg-card p-5 shadow-[var(--shadow)]">
+        <div className="rounded-[20px] bg-card p-5">
           <p className="text-[15px]">{stats.error}</p>
           <button
             onClick={stats.retry}
@@ -115,11 +115,11 @@ export function FireStats() {
               в горите на България е имало <strong className="font-semibold">{fires(s.total.fires)}</strong>. Изгоряли са{" "}
               <strong className="font-semibold">{dkaText(s.total.dka)}</strong> ({haText(s.total.dka)}).
             </p>
-            <dl className="mt-4 grid grid-cols-3 gap-2 lg:gap-3">
-              <Tile label="Пожари" value={nf(s.total.fires)} />
-              <Tile label="Изгоряла площ" value={nf(s.total.dka)} unit="дка" />
-              <Tile label="От тях върхов пожар" value={nf(s.total.crownDka)} unit="дка" hint="Огънят минава по короните на дърветата и унищожава гората." />
-            </dl>
+            {s.total.crownDka > 0 && (
+              <p className="px-1 pt-2 text-[16px] leading-snug text-muted">
+                От тях {nf(s.total.crownDka)} дка са изгорели при върхов пожар, когато огънят минава по короните и унищожава гората.
+              </p>
+            )}
           </section>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-10">
@@ -127,7 +127,7 @@ export function FireStats() {
               <h2 id="map-title" className="px-1 font-display text-[20px] font-semibold">
                 Изгоряла площ по области
               </h2>
-              <div className="mt-3 overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
+              <div className="mt-3 overflow-hidden rounded-[20px] bg-card">
                 <div className="p-2 pt-3 lg:p-4">
                   <BulgariaMap
                     ariaLabel={`Карта на областите, оцветени по изгоряла площ през ${s.year} г.`}
@@ -155,7 +155,7 @@ export function FireStats() {
             {/* On wide screens the details sit next to the map instead of in a sheet. */}
             <div className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-8">
               {wide && (
-                <section aria-live="polite" className="rounded-[20px] bg-card p-5 shadow-[var(--shadow)]">
+                <section aria-live="polite" className="rounded-[20px] bg-card p-5">
                   {region ? (
                     <RegionDetail name={region} stats={s} history={history.data} />
                   ) : (
@@ -196,18 +196,6 @@ export function FireStats() {
   );
 }
 
-function Tile({ label, value, unit, hint }: { label: string; value: string; unit?: string; hint?: string }) {
-  return (
-    <div className="flex flex-col gap-1.5 rounded-2xl bg-card p-3 shadow-[var(--shadow)] lg:p-4">
-      <dt className="text-[13px] font-medium leading-tight text-muted">{label}</dt>
-      <dd className="font-display text-[22px] font-bold leading-none tabular-nums lg:text-[28px]">
-        {value}
-        {unit && <span className="pl-1 text-[13px] font-semibold text-muted">{unit}</span>}
-      </dd>
-      {hint && <p className="hidden text-[12px] leading-snug text-muted sm:block">{hint}</p>}
-    </div>
-  );
-}
 
 function RegionDetail({ name, stats, history, bare }: { name: string; stats: Stats; history: FireHistory | null; bare?: boolean }) {
   const r = stats.regions.find((x) => x.name === name);
@@ -291,7 +279,7 @@ function Ranking({
       <h2 id="rank-title" className="px-1 font-display text-[20px] font-semibold">
         Най-засегнати области
       </h2>
-      <ol className="mt-3 divide-y divide-line overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
+      <ol className="mt-3 divide-y divide-line overflow-hidden rounded-[20px] bg-card">
         {list.map((r, i) => (
           <li key={r.name}>
             <button
@@ -332,7 +320,7 @@ function Bars({ title, unit, data, notes }: { title: string; unit: string; data:
   return (
     <section aria-label={title} className="enter">
       <h2 className="px-1 font-display text-[20px] font-semibold">{title}</h2>
-      <ul className="mt-3 flex flex-col gap-4 rounded-[20px] bg-card p-4 shadow-[var(--shadow)]">
+      <ul className="mt-3 flex flex-col gap-4 rounded-[20px] bg-card p-4">
         {sorted.map((d) => {
           const pct = Math.round((d.value / total) * 100);
           return (
@@ -374,14 +362,14 @@ function History({ data, loading, year, onYear }: { data: FireHistory | null; lo
               role="radio"
               aria-checked={metric === m}
               onClick={() => setMetric(m)}
-              className={`min-h-9 rounded-full px-3.5 transition-colors duration-150 ${metric === m ? "bg-card text-content shadow-[var(--shadow)]" : "text-muted"}`}
+              className={`min-h-9 rounded-full px-3.5 transition-colors duration-150 ${metric === m ? "bg-card text-content shadow-[var(--lift)]" : "text-muted"}`}
             >
               {m === "dka" ? "Изгоряла площ" : "Брой пожари"}
             </button>
           ))}
         </div>
       </div>
-      <div className="mt-3 rounded-[20px] bg-card p-4 shadow-[var(--shadow)] lg:p-5">
+      <div className="mt-3 rounded-[20px] bg-card p-4 lg:p-5">
         <div className="relative flex h-44 items-end gap-1 lg:h-56 lg:gap-1.5">
           <div
             className="pointer-events-none absolute inset-x-0 border-t border-dashed border-muted/60"

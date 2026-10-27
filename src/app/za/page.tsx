@@ -34,8 +34,8 @@ export default function Za() {
       </header>
 
       <section aria-labelledby="look" className="flex flex-col gap-2">
-        <h2 id="look" className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">
-          Изглед
+        <h2 id="look" className="px-1 text-[17px] font-semibold">
+          Тема
         </h2>
         <ThemeControl />
       </section>
@@ -45,10 +45,10 @@ export default function Za() {
       <Alerts />
 
       <section aria-labelledby="data" className="flex flex-col gap-2">
-        <h2 id="data" className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">
-          Данни
+        <h2 id="data" className="px-1 text-[17px] font-semibold">
+          Откъде са данните
         </h2>
-        <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card shadow-[var(--shadow)]">
+        <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-card">
           {SOURCES.map(([name, what, href]) => (
             <li key={name}>
               <a href={href} target="_blank" rel="noreferrer" className={`${row} hover:bg-line/40`}>
@@ -66,7 +66,7 @@ export default function Za() {
         </p>
       </section>
 
-      <a href={REPO} target="_blank" rel="noreferrer" className={`${row} rounded-[20px] bg-card shadow-[var(--shadow)] hover:bg-line/40`}>
+      <a href={REPO} target="_blank" rel="noreferrer" className={`${row} rounded-[20px] bg-card hover:bg-line/40`}>
         <span className="text-[16px] font-medium">Отворен код в GitHub</span>
         <ArrowUpRight size={16} strokeWidth={2} className="text-muted" aria-hidden />
       </a>

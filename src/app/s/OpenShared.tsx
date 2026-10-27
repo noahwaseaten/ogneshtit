@@ -16,5 +16,5 @@ export function OpenShared() {
     if (lat > 40 && lat < 45.5 && lon > 21 && lon < 30 && n) setLoc({ lat, lon, label: n, source: "place" });
     router.replace("/");
   }, [sp, router, setLoc]);
-  return <div className="skeleton h-[300px] rounded-[28px]" aria-label="Отваряме прогнозата" />;
+  return <div className="skeleton h-[300px] rounded-[20px]" aria-label="Отваряме прогнозата" />;
 }

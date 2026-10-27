@@ -29,7 +29,7 @@ export function Sheet({
         <Drawer.Content
           className={
             wide
-              ? "fixed inset-y-3 right-3 z-50 flex w-[420px] flex-col overflow-hidden rounded-[28px] bg-card shadow-2xl outline-none"
+              ? "fixed inset-y-3 right-3 z-50 flex w-[420px] flex-col overflow-hidden rounded-[20px] bg-card shadow-2xl outline-none"
               : "fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[88dvh] max-w-xl flex-col rounded-t-[28px] bg-card outline-none"
           }
           style={wide ? undefined : { paddingBottom: "env(safe-area-inset-bottom)" }}

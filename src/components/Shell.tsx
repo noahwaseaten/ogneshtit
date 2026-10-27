@@ -38,7 +38,6 @@ export function Sidebar() {
         <Logo size={34} />
         <span className="font-display text-[22px] font-bold tracking-[-0.01em]">ОгнеЩит</span>
       </Link>
-      <p className="px-2 pt-2 text-[13px] leading-snug text-muted">Горски пожари в България: днес, наблизо и какво да направите.</p>
       <nav aria-label="Основна навигация" className="mt-8">
         <ul className="flex flex-col gap-1">
           {NAV.map(({ href, label, Icon }) => {
@@ -48,11 +47,11 @@ export function Sidebar() {
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] transition-colors duration-150 ${
-                    active ? "bg-accent/12 font-semibold text-accent" : "font-medium text-content hover:bg-line/60"
+                  className={`flex min-h-12 items-center gap-3 rounded-full px-4 text-[15px] ${
+                    active ? "bg-accent/15 font-semibold text-content" : "font-medium text-muted hover:bg-line/60 hover:text-content"
                   }`}
                 >
-                  <Icon size={20} strokeWidth={active ? 2.25 : 1.75} aria-hidden />
+                  <Icon size={20} strokeWidth={active ? 2.25 : 1.75} aria-hidden className={active ? "text-accent" : undefined} />
                   {label}
                 </Link>
               </li>
@@ -108,28 +107,44 @@ export function TopBar() {
   );
 }
 
+/**
+ * Bottom navigation in the Material 3 style: four destinations, labels always visible, and a pill
+ * indicator behind the active icon. The pill grows from the centre (transform and opacity only,
+ * so fast taps never leave half-drawn states). Short bar: 64 px plus the safe area.
+ */
 export function TabBar() {
   const path = usePathname();
   return (
     <nav
       aria-label="Основна навигация"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/85 backdrop-blur-xl supports-[not(backdrop-filter:blur(1px))]:bg-card lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 bg-card/90 backdrop-blur-xl supports-[not(backdrop-filter:blur(1px))]:bg-card lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="mx-auto flex h-[var(--tabbar-h)] max-w-xl">
+      <ul className="mx-auto grid h-[var(--tabbar-h)] max-w-xl grid-cols-4">
         {NAV.map(({ href, label, Icon }) => {
           const active = isActive(path, href);
           return (
-            <li key={href} className="flex-1">
+            <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`pressable flex h-full flex-col items-center justify-center gap-0.5 text-[11px] ${
-                  active ? "font-semibold text-accent" : "font-medium text-muted"
-                }`}
+                className="group flex h-full flex-col items-center justify-center gap-1 outline-none"
               >
-                <Icon aria-hidden size={24} strokeWidth={active ? 2 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
-                {label}
+                <span className="relative grid h-8 w-14 place-items-center">
+                  <span
+                    aria-hidden
+                    className={`absolute inset-0 rounded-full bg-accent/15 transition-[transform,opacity] duration-200 ease-[var(--ease-out)] group-focus-visible:ring-2 group-focus-visible:ring-accent ${
+                      active ? "scale-x-100 opacity-100" : "scale-x-50 opacity-0 group-active:scale-x-90 group-active:opacity-60"
+                    }`}
+                  />
+                  <Icon
+                    aria-hidden
+                    size={22}
+                    strokeWidth={active ? 2.25 : 1.75}
+                    className={`relative ${active ? "text-accent" : "text-muted"}`}
+                  />
+                </span>
+                <span className={`text-[12px] leading-none tracking-[0.01em] ${active ? "font-semibold text-content" : "font-medium text-muted"}`}>{label}</span>
               </Link>
             </li>
           );
@@ -158,7 +173,7 @@ export function ThemeControl({ compact }: { compact?: boolean }) {
           title={compact ? label : undefined}
           onClick={() => setTheme(key)}
           className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[14px] font-medium transition-colors duration-150 ${
-            theme === key ? "bg-card text-content shadow-[var(--shadow)]" : "text-muted hover:text-content"
+            theme === key ? "bg-card text-content shadow-[var(--lift)]" : "text-muted hover:text-content"
           }`}
         >
           <Icon size={17} strokeWidth={1.75} aria-hidden />

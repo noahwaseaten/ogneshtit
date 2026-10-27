@@ -99,3 +99,7 @@ export const airBand = (aqi: number) => AIR_BANDS.find((b) => aqi <= b.max) ?? A
 const DIRS = ["север", "североизток", "изток", "югоизток", "юг", "югозапад", "запад", "северозапад"];
 /** Wind direction (degrees it blows from) as a word: "от северозапад". */
 export const windFrom = (deg: number) => DIRS[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
+
+const SHORT = ["С", "СИ", "И", "ЮИ", "Ю", "ЮЗ", "З", "СЗ"];
+/** Short compass letters for tight spaces: "СЗ". */
+export const windShort = (deg: number) => SHORT[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
