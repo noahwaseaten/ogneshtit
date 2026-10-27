@@ -46,10 +46,10 @@ export const whoOf = (loc: Loc, lang: Lang) => (loc.source === "gps" ? (lang ===
 /** Short verdict for lists. */
 export function verdict(s: Fire, lang: Lang) {
   const bg = lang === "bg";
-  if (s.status === "static") return bg ? "Постоянна топлина, вероятно завод" : "Constant heat, probably industry";
+  if (s.status === "static") return bg ? "Вероятно завод" : "Probably industry";
   if (s.status === "weak") return bg ? "Слаб сигнал" : "Weak signal";
   if (s.missed > 0) return bg ? "Не е видян отново" : "Not seen again";
-  if (s.status === "confirmed") return bg ? `Потвърден, видян ${s.passes} пъти` : `Confirmed, seen ${s.passes} times`;
+  if (s.status === "confirmed") return bg ? "Потвърден" : "Confirmed";
   return bg ? "Видян веднъж" : "Seen once";
 }
 
@@ -296,8 +296,8 @@ export function SpotRow({ s, onClick }: { s: Spot; onClick: () => void }) {
           {s.km <= NEAR_KM && isReal(s) && <span className="text-ember"> · {t("наблизо", "nearby")}</span>}
         </span>
         <span className="block text-[13px] text-muted">
-          {verdict(s, lang)} · {agoLong(s.last)} · <HeatMeter tier={heatRank(s.frp)} color={heatColor(s.frp)} />
-          <span className="sr-only">{t(`${strength(s.frp, "bg")} топлина`, `${strength(s.frp, "en")} heat`)}</span>
+          {verdict(s, lang)} · {agoLong(s.last)}
+          <span className="sr-only">. {t(`${strength(s.frp, "bg")} топлина`, `${strength(s.frp, "en")} heat`)}</span>
         </span>
       </span>
       <ChevronRight size={20} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />

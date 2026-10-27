@@ -308,7 +308,7 @@ export async function getLiveDangerMap(): Promise<DangerMap> {
 }
 
 /** MET Norway for each oblast centre, carried forward from the stored codes. A few at a time (their fair-use limit). */
-async function getMetDangerMap(saved: DangerMap): Promise<DangerMap> {
+export async function getMetDangerMap(saved: DangerMap): Promise<DangerMap> {
   "use cache";
   cacheLife({ stale: 600, revalidate: 1800, expire: 21600 });
   const { OBLASTS } = await import("@/data/oblasts");
