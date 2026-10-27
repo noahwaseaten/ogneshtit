@@ -54,8 +54,11 @@ export function InstallButton({ compact }: { compact?: boolean }) {
       <Download size={21} strokeWidth={2} aria-hidden />
     </button>
   ) : (
-    <button onClick={install} className="pressable flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent text-[15px] font-semibold text-accent-content">
-      <Download size={18} strokeWidth={2} aria-hidden />
+    <button
+      onClick={install}
+      className="pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-[16px] font-semibold text-accent-content"
+    >
+      <Download size={20} strokeWidth={2} aria-hidden />
       Инсталирай
     </button>
   );
