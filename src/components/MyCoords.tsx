@@ -2,24 +2,27 @@
 
 import { useState } from "react";
 import { Copy, Check, LocateFixed } from "lucide-react";
+import { getPosition } from "@/lib/client";
 
 /** Precise GPS position for the 112 operator. GPS works without mobile data. */
 export function MyCoords() {
   const [pos, setPos] = useState<{ lat: number; lon: number; acc: number } | null>(null);
   const [state, setState] = useState<"idle" | "locating" | "error">("idle");
   const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const locate = () => {
-    if (!("geolocation" in navigator)) return setState("error");
     setState("locating");
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
+    setErr(null);
+    getPosition(true)
+      .then((p) => {
         setPos({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy });
         setState("idle");
-      },
-      () => setState("error"),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
-    );
+      })
+      .catch((e: Error) => {
+        setErr(e.message);
+        setState("error");
+      });
   };
 
   const text = pos ? `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}` : "";
@@ -45,7 +48,7 @@ export function MyCoords() {
         </button>
         {state === "error" && (
           <p role="alert" className="pt-2 text-[14px] opacity-90">
-            Нямаме достъп до местоположението. Опишете на оператора най-близкото село, връх или път.
+            {err} Ако не стане, опишете на оператора най-близкото село, връх или път.
           </p>
         )}
       </div>

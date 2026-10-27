@@ -88,11 +88,16 @@ export function BulgariaMap({
     setLastR(r);
     setVb((v) => clampVB(v, r));
   }
-  useEffect(() => {
-    live.current = vb;
-  }, [vb]);
 
+  // The viewBox is written to the DOM at once; React re-renders at most once per frame so markers
+  // and town names follow the zoom live without re-rendering on every pointer event.
+  const frame = useRef<number | null>(null);
   const paint = (v: VB) => {
+    if (frame.current == null)
+      frame.current = requestAnimationFrame(() => {
+        frame.current = null;
+        setVb({ ...live.current });
+      });
     live.current = v;
     svg.current?.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.w * r}`);
   };
@@ -128,6 +133,11 @@ export function BulgariaMap({
   const suppress = useRef(false);
   const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anim = useRef<number | null>(null);
+
+  // Follow view changes that come from outside a gesture (the box resizing), never during one.
+  useEffect(() => {
+    if (!g.current && !anim.current && frame.current == null) live.current = vb;
+  }, [vb]);
 
   const stopAnim = () => {
     if (anim.current) cancelAnimationFrame(anim.current);
@@ -424,7 +434,11 @@ export function BulgariaMap({
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={up}
-      onLostPointerCapture={up}
+      onLostPointerCapture={(e) => {
+        // Only when the map itself loses the pointer. Children losing their implicit capture
+        // (which happens the moment a drag starts on iOS) must not end the gesture.
+        if (e.target === e.currentTarget) up(e);
+      }}
     >
       <svg
         ref={svg}

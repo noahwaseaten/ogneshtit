@@ -42,27 +42,12 @@ export function useLocation() {
   const [gpsError, setGpsError] = useState<string | null>(null);
 
   const requestGps = useCallback(() => {
-    if (!("geolocation" in navigator)) {
-      setGpsError("Устройството не поддържа местоположение.");
-      return;
-    }
     setLocating(true);
     setGpsError(null);
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setLocating(false);
-        write({ lat: p.coords.latitude, lon: p.coords.longitude, label: "Тук", source: "gps" });
-      },
-      (e) => {
-        setLocating(false);
-        setGpsError(
-          e.code === e.PERMISSION_DENIED
-            ? "Не разрешихте достъп до местоположението. Потърсете населеното място по име."
-            : "Не успяхме да открием къде сте. Опитайте пак или потърсете населеното място.",
-        );
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
-    );
+    getPosition()
+      .then((p) => write({ lat: p.coords.latitude, lon: p.coords.longitude, label: "Тук", source: "gps" }))
+      .catch((e: Error) => setGpsError(e.message))
+      .finally(() => setLocating(false));
   }, []);
 
   return { loc, setLoc: write, requestGps, locating, gpsError };
@@ -204,3 +189,73 @@ export function useTheme() {
 
 /** "в София", but "във Варна" / "във Велико Търново" before в and ф. */
 export const inPlace = (name: string) => `${/^[ВвФф]/.test(name) ? "във" : "в"} ${name}`;
+
+/**
+ * One reliable way to ask for the position. Tries a quick, coarse fix first and then a precise one,
+ * and turns every failure into a sentence a person can act on (Safari on iPhone is the strict one).
+ */
+export async function getPosition(precise = false): Promise<GeolocationPosition> {
+  if (typeof window === "undefined" || !("geolocation" in navigator)) throw new Error("Това устройство не дава местоположение.");
+  if (!window.isSecureContext) throw new Error("Местоположението работи само през защитена връзка (https).");
+  const ask = (high: boolean, timeout: number, maximumAge: number) =>
+    new Promise<GeolocationPosition>((res, rej) =>
+      navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: high, timeout, maximumAge }),
+    );
+  try {
+    return await ask(precise, precise ? 15000 : 8000, precise ? 0 : 300000);
+  } catch (e) {
+    const err = e as GeolocationPositionError;
+    if (err.code === 1) {
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+      throw new Error(
+        ios
+          ? "Нямаме достъп до местоположението. На iPhone: Настройки → Поверителност и сигурност → Услуги за местоположение → Уебсайтове в Safari → „Докато се ползва“. После презаредете страницата."
+          : "Нямаме достъп до местоположението. Разрешете го за този сайт от иконата до адреса и опитайте пак.",
+      );
+    }
+    // Timed out or no fix yet: one more try with the other accuracy and more time.
+    try {
+      return await ask(!precise, 20000, 600000);
+    } catch {
+      throw new Error("Телефонът не намери местоположение. Излезте на открито или включете услугите за местоположение и опитайте пак.");
+    }
+  }
+}
+
+// Saved places ("Моите места"): home, a village, a cottage. Kept on the device only.
+const PLACES_KEY = "ogneshtit:places";
+const placeListeners = new Set<() => void>();
+let placesCache: Loc[] | null = null;
+const EMPTY: Loc[] = [];
+
+function readPlaces(): Loc[] {
+  if (placesCache) return placesCache;
+  try {
+    placesCache = JSON.parse(localStorage.getItem(PLACES_KEY) ?? "[]") as Loc[];
+  } catch {
+    placesCache = [];
+  }
+  return placesCache;
+}
+function writePlaces(list: Loc[]) {
+  placesCache = list.slice(0, 6);
+  try {
+    localStorage.setItem(PLACES_KEY, JSON.stringify(placesCache));
+  } catch {}
+  placeListeners.forEach((l) => l());
+}
+export const samePlace = (a: Loc, b: Loc) => Math.abs(a.lat - b.lat) < 0.01 && Math.abs(a.lon - b.lon) < 0.01;
+
+export function usePlaces() {
+  const places = useSyncExternalStore(
+    (cb) => {
+      placeListeners.add(cb);
+      return () => placeListeners.delete(cb);
+    },
+    readPlaces,
+    () => EMPTY,
+  );
+  const add = (l: Loc) => !places.some((p) => samePlace(p, l)) && writePlaces([...places, l]);
+  const remove = (l: Loc) => writePlaces(places.filter((p) => !samePlace(p, l)));
+  return { places, add, remove, has: (l: Loc) => places.some((p) => samePlace(p, l)), full: places.length >= 6 };
+}

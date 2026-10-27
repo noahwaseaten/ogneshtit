@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
-import { sofiaTime, useLocation } from "@/lib/client";
+import { getPosition, sofiaTime, useLocation } from "@/lib/client";
 import { nearestRdg, telOf, useRdgs } from "./rdg";
 
 const KINDS = ["Сеч без марки или позволително", "Извозване на дървесина", "Бракониерство", "Палене на огън", "Отпадъци в гората", "Друго"];
@@ -17,7 +17,7 @@ export function ReportForm() {
   const [kind, setKind] = useState(KINDS[0]);
   const [pos, setPos] = useState<{ lat: number; lon: number; acc: number } | null>(null);
   const [locating, setLocating] = useState(false);
-  const [locErr, setLocErr] = useState(false);
+  const [locErr, setLocErr] = useState<string | null>(null);
   const [place, setPlace] = useState("");
   const [plate, setPlate] = useState("");
   const [desc, setDesc] = useState("");
@@ -65,20 +65,12 @@ export function ReportForm() {
   }, []);
 
   const locate = () => {
-    if (!("geolocation" in navigator)) return setLocErr(true);
     setLocating(true);
-    setLocErr(false);
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setPos({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy });
-        setLocating(false);
-      },
-      () => {
-        setLocErr(true);
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
-    );
+    setLocErr(null);
+    getPosition(true)
+      .then((p) => setPos({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }))
+      .catch((e: Error) => setLocErr(e.message))
+      .finally(() => setLocating(false));
   };
 
   // Composed when sent, so "Кога" is the moment of sending.
@@ -176,7 +168,7 @@ export function ReportForm() {
             {locating ? "Търсим сигнал от GPS…" : "Добави точните ми координати"}
           </button>
         )}
-        {locErr && <p className="pt-2 text-[14px] text-ember">Няма достъп до местоположението. Опишете мястото по-долу.</p>}
+        {locErr && <p className="pt-2 text-[14px] leading-snug text-ember">{locErr} Може и да опишете мястото по-долу.</p>}
         <label className="mt-2 block">
           <span className="sr-only">Описание на мястото</span>
           <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Село, път или местност" className={`${field} min-h-12`} />
