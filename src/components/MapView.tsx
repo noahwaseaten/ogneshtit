@@ -158,7 +158,10 @@ function Legend({ layer, hours, who }: { layer: Layer; hours?: number; who: stri
             {who}
           </li>
           <li className={item}>
-            <span className="size-3 rounded-full border-[1.5px] border-dashed border-[#1f6fd1]" aria-hidden />
+            {/* Drawn as SVG: CSS dashed borders on tiny circles render as uneven dashes. */}
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden className="shrink-0">
+              <circle cx="7" cy="7" r="5.75" fill="none" stroke="#1f6fd1" strokeWidth="1.5" strokeDasharray="3.01 3.01" />
+            </svg>
             {NEAR_KM} км
           </li>
         </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { Share, SquarePlus, MoreVertical, MoreHorizontal, Menu, MonitorDown } from "lucide-react";
 import { InstallButton, useInstall } from "./Install";
 
@@ -46,21 +46,13 @@ function Steps({ items }: { items: React.ReactNode[] }) {
   );
 }
 
-const TABS: { key: Platform; label: string }[] = [
-  { key: "ios", label: "iPhone" },
-  { key: "android", label: "Android" },
-  { key: "desktop", label: "Компютър" },
-];
-
-/** How to install, for each platform. The tab for this device is chosen for you. */
+/** How to install on this device: the platform and browser are detected, so only the right steps show. */
 export function InstallHelp() {
   const { standalone, canPrompt } = useInstall();
   const device = useSyncExternalStore(noop, detect, () => null);
-  const [picked, setPicked] = useState<Platform | null>(null);
-  const tab = picked ?? device?.platform ?? "ios";
-  const browser = device && device.platform === tab ? device.browser : null;
-
-  if (standalone) return null;
+  if (standalone || !device) return null;
+  const tab = device.platform;
+  const browser = device.browser;
 
   const content: Record<Platform, React.ReactNode> = {
     ios: (
@@ -135,24 +127,10 @@ export function InstallHelp() {
         {canPrompt && (
           <div className="pb-4">
             <InstallButton />
+            <p className="pt-3 text-[14px] text-muted">Или ръчно:</p>
           </div>
         )}
-        <div role="tablist" aria-label="Устройство" className="grid grid-cols-3 rounded-full bg-line p-1">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => setPicked(t.key)}
-              className={`min-h-10 rounded-full text-[15px] font-semibold ${tab === t.key ? "bg-tonal text-content" : "text-muted"}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div role="tabpanel" className="pt-4">
-          {content[tab]}
-        </div>
+        {content[tab]}
       </div>
     </section>
   );

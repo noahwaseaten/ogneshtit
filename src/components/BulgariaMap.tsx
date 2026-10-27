@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Minus, Plus, Maximize } from "lucide-react";
+import { Minus, Plus, Maximize, LocateFixed } from "lucide-react";
 import { MAP_H, MAP_W, OBLASTS, UNITS_PER_KM, project } from "@/data/oblasts";
 import { PLACES } from "@/data/places";
 
@@ -106,20 +106,91 @@ export function BulgariaMap({
     return clampVB({ w, x: px - fx * w, y: py - fy * w * r }, r);
   };
 
-  // --- gestures -----------------------------------------------------------------------------
+  // --- gestures (modelled on Google Maps on phones) -------------------------------------------
+  // one finger drag pans and flings · pinch zooms around the fingers · double tap zooms in ·
+  // two-finger tap zooms out · double tap and drag up/down zooms with one thumb.
+  type Gesture = {
+    start: VB;
+    sx: number;
+    sy: number;
+    moved: boolean;
+    t0: number;
+    mode: "pan" | "pinch" | "quickzoom";
+    dist?: number;
+    mx?: number;
+    my?: number;
+    maxPointers: number;
+    samples: { t: number; x: number; y: number }[];
+  };
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const g = useRef<{ start: VB; sx: number; sy: number; moved: boolean; dist?: number; mx?: number; my?: number } | null>(null);
-  const lastTap = useRef(0);
+  const g = useRef<Gesture | null>(null);
+  const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
   const suppress = useRef(false);
   const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const anim = useRef<number | null>(null);
+
+  const stopAnim = () => {
+    if (anim.current) cancelAnimationFrame(anim.current);
+    anim.current = null;
+  };
+
+  /** Smoothly move to a view: position eases, zoom eases in log space (as map apps do). */
+  const animateTo = (target: VB, ms = 280) => {
+    stopAnim();
+    const from = { ...live.current };
+    const t0 = performance.now();
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / ms);
+      const e = ease(t);
+      const w = Math.exp(Math.log(from.w) + (Math.log(target.w) - Math.log(from.w)) * e);
+      paint({ w, x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e });
+      if (t < 1) anim.current = requestAnimationFrame(step);
+      else {
+        anim.current = null;
+        commit();
+      }
+    };
+    anim.current = requestAnimationFrame(step);
+  };
+
+  /** Keep moving after a quick drag, slowing down like a real surface. */
+  const fling = (vx: number, vy: number) => {
+    stopAnim();
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min(32, now - last);
+      last = now;
+      const k = live.current.w / (box.current?.getBoundingClientRect().width || 1);
+      const before = live.current;
+      const next = clampVB({ ...before, x: before.x - vx * dt * k, y: before.y - vy * dt * k }, r);
+      paint(next);
+      const decay = Math.pow(0.995, dt);
+      vx *= decay;
+      vy *= decay;
+      const stuck = next.x === before.x && next.y === before.y;
+      if (Math.hypot(vx, vy) > 0.02 && !stuck) anim.current = requestAnimationFrame(step);
+      else {
+        anim.current = null;
+        commit();
+      }
+    };
+    anim.current = requestAnimationFrame(step);
+  };
+
+  const rel = (x: number, y: number) => {
+    const rect = box.current!.getBoundingClientRect();
+    return { fx: (x - rect.left) / rect.width, fy: (y - rect.top) / rect.height, rect };
+  };
 
   useEffect(() => {
     const el = box.current;
     if (!el || !zoomable) return;
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      paint(zoomBy(Math.exp(-e.deltaY * 0.002), (e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height));
+      stopAnim();
+      const { fx, fy } = rel(e.clientX, e.clientY);
+      paint(zoomBy(Math.exp(-e.deltaY * 0.002), fx, fy));
       if (wheelTimer.current) clearTimeout(wheelTimer.current);
       wheelTimer.current = setTimeout(commit, 120);
     };
@@ -135,19 +206,37 @@ export function BulgariaMap({
       el.removeEventListener("gesturechange", stop);
       el.removeEventListener("touchmove", stop);
     };
-    // paint/zoomBy read refs and the current ratio
+    // the handlers read refs and the current ratio
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomable, r, commit]);
 
   const down = (e: React.PointerEvent) => {
     if (!zoomable) return;
+    stopAnim();
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const pts = [...pointers.current.values()];
-    if (pts.length === 1) g.current = { start: live.current, sx: e.clientX, sy: e.clientY, moved: false };
-    else if (pts.length === 2) {
+    const now = performance.now();
+    if (pts.length === 1) {
+      const lt = lastTap.current;
+      const second = !!lt && now - lt.t < 300 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 40;
+      g.current = { start: live.current, sx: e.clientX, sy: e.clientY, moved: false, t0: now, mode: second ? "quickzoom" : "pan", maxPointers: 1, samples: [{ t: now, x: e.clientX, y: e.clientY }] };
+      if (second) box.current!.setPointerCapture(e.pointerId);
+    } else if (pts.length === 2) {
       const [a, b] = pts;
       for (const id of pointers.current.keys()) box.current!.setPointerCapture(id);
-      g.current = { start: live.current, sx: 0, sy: 0, moved: true, dist: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+      g.current = {
+        start: live.current,
+        sx: 0,
+        sy: 0,
+        moved: false,
+        t0: g.current?.t0 ?? now,
+        mode: "pinch",
+        dist: Math.hypot(a.x - b.x, a.y - b.y),
+        mx: (a.x + b.x) / 2,
+        my: (a.y + b.y) / 2,
+        maxPointers: 2,
+        samples: [],
+      };
     }
   };
 
@@ -156,21 +245,35 @@ export function BulgariaMap({
     if (!zoomable || !cur || !pointers.current.has(e.pointerId)) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const rect = box.current!.getBoundingClientRect();
-    const k = cur.start.w / rect.width;
     const pts = [...pointers.current.values()];
-    if (pts.length === 1) {
+
+    if (cur.mode === "quickzoom") {
+      const dy = e.clientY - cur.sy;
+      if (!cur.moved && Math.abs(dy) < 6) return;
+      cur.moved = true;
+      const { fx, fy } = rel(cur.sx, cur.sy);
+      paint(zoomBy(Math.exp(dy * 0.012), fx, fy, cur.start));
+      return;
+    }
+    if (pts.length === 1 && cur.mode === "pan") {
       const dx = e.clientX - cur.sx;
       const dy = e.clientY - cur.sy;
       if (!cur.moved && Math.hypot(dx, dy) < 8) return;
       // Capture only once it is a drag, so plain taps still reach the regions and markers.
       if (!cur.moved) box.current!.setPointerCapture(e.pointerId);
       cur.moved = true;
+      const k = cur.start.w / rect.width;
       paint(clampVB({ ...cur.start, x: cur.start.x - dx * k, y: cur.start.y - dy * k }, r));
+      const t = performance.now();
+      cur.samples.push({ t, x: e.clientX, y: e.clientY });
+      while (cur.samples.length > 2 && t - cur.samples[0].t > 100) cur.samples.shift();
     } else if (pts.length >= 2 && cur.dist && cur.mx != null && cur.my != null) {
       const [a, b] = pts;
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
       const mx = (a.x + b.x) / 2;
       const my = (a.y + b.y) / 2;
+      if (!cur.moved && Math.abs(dist - cur.dist) < 6 && Math.hypot(mx - cur.mx, my - cur.my) < 6) return;
+      cur.moved = true;
       // The map point that was under the fingers' midpoint stays under it.
       const ax = cur.start.x + ((cur.mx - rect.left) / rect.width) * cur.start.w;
       const ay = cur.start.y + ((cur.my - rect.top) / rect.height) * cur.start.w * r;
@@ -184,21 +287,61 @@ export function BulgariaMap({
     pointers.current.delete(e.pointerId);
     const cur = g.current;
     const left = [...pointers.current.values()];
+    const now = performance.now();
+    const cancelled = e.type !== "pointerup";
+
     if (cur?.moved) {
       suppress.current = true;
       setTimeout(() => (suppress.current = false), 0);
-    } else if (e.type === "pointerup" && left.length === 0) {
-      // Double tap zooms in where you tapped.
-      const now = performance.now();
-      if (now - lastTap.current < 300) {
-        const rect = box.current!.getBoundingClientRect();
-        paint(zoomBy(2, (e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height));
-        lastTap.current = 0;
-      } else lastTap.current = now;
+    }
+
+    if (left.length === 0 && cur && !cancelled) {
+      if (cur.mode === "quickzoom" && !cur.moved) {
+        // Plain double tap: zoom in where you tapped.
+        const { fx, fy } = rel(cur.sx, cur.sy);
+        lastTap.current = null;
+        animateTo(zoomBy(2, fx, fy));
+        g.current = null;
+        return;
+      }
+      if (cur.mode === "pinch" && !cur.moved && now - cur.t0 < 300) {
+        // Two-finger tap: zoom out.
+        animateTo(zoomBy(0.5));
+        g.current = null;
+        suppress.current = true;
+        setTimeout(() => (suppress.current = false), 0);
+        return;
+      }
+      if (cur.mode === "pan" && !cur.moved) lastTap.current = { t: now, x: cur.sx, y: cur.sy };
+      if (cur.mode === "pan" && cur.moved && cur.samples.length > 1) {
+        const a = cur.samples[0];
+        const b = cur.samples[cur.samples.length - 1];
+        const dt = b.t - a.t;
+        if (dt > 0 && now - b.t < 60) {
+          const vx = (b.x - a.x) / dt;
+          const vy = (b.y - a.y) / dt;
+          if (Math.hypot(vx, vy) > 0.3) {
+            g.current = null;
+            fling(vx, vy);
+            return;
+          }
+        }
+      }
     }
     // A finger left after a pinch carries on as a drag from where it is.
-    g.current = left.length === 1 ? { start: live.current, sx: left[0].x, sy: left[0].y, moved: true } : null;
+    g.current =
+      left.length === 1
+        ? { start: live.current, sx: left[0].x, sy: left[0].y, moved: true, t0: now, mode: "pan", maxPointers: 1, samples: [] }
+        : null;
     if (left.length === 0) commit();
+  };
+
+  /** Centre on the person's place, close enough to see the 50 km circle. */
+  const locate = () => {
+    if (!me) return;
+    const [x, y] = project(me.lat, me.lon);
+    const w = Math.max(MAP_W / MAX_ZOOM, 160 * UNITS_PER_KM);
+    animateTo(clampVB({ w, x: x - w / 2, y: y - (w * r) / 2 }, r));
   };
 
   /** Runs a tap action unless the pointer was just used to drag or pinch. */
@@ -401,31 +544,34 @@ export function BulgariaMap({
       </svg>
 
       {zoomable && (
-        <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-xl bg-card/95 ring-1 ring-line backdrop-blur" onPointerDown={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => (paint(zoomBy(2)), commit())}
-            disabled={zoom >= MAX_ZOOM}
-            aria-label="Приближи"
-            className="grid size-11 place-items-center active:bg-line disabled:opacity-35"
-          >
-            <Plus size={20} strokeWidth={2} aria-hidden />
-          </button>
-          <button
-            onClick={() => (paint(zoomBy(0.5)), commit())}
-            disabled={zoom <= 1.01}
-            aria-label="Отдалечи"
-            className="grid size-11 place-items-center border-t border-line active:bg-line disabled:opacity-35"
-          >
-            <Minus size={20} strokeWidth={2} aria-hidden />
-          </button>
-          <button
-            onClick={() => (paint(fullVB(r)), commit())}
-            disabled={zoom <= 1.01}
-            aria-label="Цяла България"
-            className="grid size-11 place-items-center border-t border-line active:bg-line disabled:opacity-35"
-          >
-            <Maximize size={17} strokeWidth={2} aria-hidden />
-          </button>
+        <div className="absolute bottom-3 right-3 flex flex-col items-end gap-2" onPointerDown={(e) => e.stopPropagation()}>
+          {zoom > 1.05 && (
+            <button
+              onClick={() => animateTo(fullVB(r))}
+              aria-label="Цяла България"
+              className="pressable grid size-11 place-items-center rounded-full bg-card text-content shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
+            >
+              <Maximize size={18} strokeWidth={2} aria-hidden />
+            </button>
+          )}
+          {/* Phones zoom with fingers, as in map apps; buttons only where there is a mouse. */}
+          <div className="hidden flex-col overflow-hidden rounded-xl bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] [@media(pointer:fine)]:flex">
+            <button onClick={() => animateTo(zoomBy(2))} disabled={zoom >= MAX_ZOOM} aria-label="Приближи" className="grid size-10 place-items-center hover:bg-line/60 disabled:opacity-35">
+              <Plus size={18} strokeWidth={2} aria-hidden />
+            </button>
+            <button onClick={() => animateTo(zoomBy(0.5))} disabled={zoom <= 1.01} aria-label="Отдалечи" className="grid size-10 place-items-center border-t border-line hover:bg-line/60 disabled:opacity-35">
+              <Minus size={18} strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+          {me && (
+            <button
+              onClick={locate}
+              aria-label="Покажи моето място"
+              className="pressable grid size-12 place-items-center rounded-full bg-card text-[#1f6fd1] shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
+            >
+              <LocateFixed size={22} strokeWidth={2} aria-hidden />
+            </button>
+          )}
         </div>
       )}
     </div>

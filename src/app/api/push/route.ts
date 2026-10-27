@@ -1,24 +1,40 @@
 import { connection } from "next/server";
-import { deleteSub, saveSub, type Sub } from "@/lib/alerts";
+import { DEFAULT_PREFS, deleteSub, getSub, saveSub, type Prefs } from "@/lib/alerts";
+import { oblastAt } from "@/lib/oblast";
 
 const r = (x: number) => Math.round(x * 100) / 100;
 
+function readPrefs(p: Partial<Prefs> | undefined): Prefs {
+  return {
+    danger: p?.danger === "off" || p?.danger === "veryhigh" ? p.danger : DEFAULT_PREFS.danger,
+    firesKm: p?.firesKm === 0 || p?.firesKm === 10 || p?.firesKm === 50 ? p.firesKm : 25,
+    warnings: p?.warnings !== false,
+  };
+}
+
+/** Subscribe, or update the place and preferences of an existing subscription. */
 export async function POST(req: Request) {
   await connection();
-  const body = (await req.json().catch(() => null)) as Partial<Sub> | null;
+  const body = (await req.json().catch(() => null)) as {
+    subscription?: { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+    place?: { lat: number; lon: number; label?: string };
+    prefs?: Partial<Prefs>;
+  } | null;
   const s = body?.subscription;
   const p = body?.place;
   if (!s?.endpoint?.startsWith("https://") || !s.keys?.p256dh || !s.keys?.auth || !p) {
     return Response.json({ error: "Невалиден абонамент." }, { status: 400 });
   }
   if (!(p.lat > 40 && p.lat < 45.5 && p.lon > 21 && p.lon < 30)) return Response.json({ error: "Мястото е извън България." }, { status: 400 });
+  const old = await getSub(s.endpoint);
+  const samePlace = old && old.place.lat === r(p.lat) && old.place.lon === r(p.lon);
   await saveSub({
     subscription: { endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh, auth: s.keys.auth } },
-    place: { lat: r(p.lat), lon: r(p.lon), label: String(p.label ?? "").slice(0, 60) },
-    danger: body?.danger !== false,
-    fires: body?.fires !== false,
-    sent: {},
-    created: new Date().toISOString(),
+    place: { lat: r(p.lat), lon: r(p.lon), label: String(p.label ?? "").slice(0, 60), oblast: oblastAt(p.lat, p.lon)?.name },
+    prefs: readPrefs(body?.prefs),
+    // Keep what was already sent for the same place, so changing a setting does not repeat alerts.
+    sent: samePlace ? old.sent : {},
+    created: old?.created ?? new Date().toISOString(),
   });
   return Response.json({ ok: true });
 }

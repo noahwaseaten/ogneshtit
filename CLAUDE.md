@@ -101,3 +101,13 @@ public/sw.js        offline service worker (bump VERSION when the shell list cha
 Build, run `next start`, and screenshot with Playwright (Chromium is preinstalled in Claude cloud sessions) at
 390×844 and 1440×900, in light and dark, with `service_workers: "block"` so route mocks apply. Mock the `/api/*`
 routes when the sandbox cannot reach the real sources.
+
+## Push alerts
+
+- Subscriptions are private JSON blobs in Vercel Blob (`subs/<hash>.json`, `src/lib/alerts.ts`), with the person's
+  place (rounded to about 1 km) and preferences: danger threshold, fire radius (0/10/25/50 km), НИМХ orange/red.
+- `/api/cron/alerts` sends at most one danger alert per place per day, only fires not reported before, and each
+  warning once; nothing between 22:00 and 07:00 Sofia time. It runs every 30 minutes from
+  `.github/workflows/alerts.yml` (needs the repo secret `CRON_SECRET`, same value as in Vercel) and daily from Vercel Cron.
+- `/api/push/test` sends a test notification to an existing subscription (once a minute at most).
+- Env: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN` (all in Vercel).
