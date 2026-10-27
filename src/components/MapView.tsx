@@ -262,15 +262,25 @@ function FiresSide({
       {spots.hidden > 0 && (
         <div className="flex items-center justify-between gap-3 rounded-[20px] bg-card px-4 py-3">
           <p className="text-[14px] leading-snug text-muted">
-            {showAll
-              ? t(
-                  `Показваме и ${spots.hidden} съмнителни: слаби сигнали и места с постоянна топлина (заводи, ТЕЦ). Те са бледи.`,
-                  `Also showing ${spots.hidden} doubtful ones: weak signals and spots with constant heat (factories, power plants). They are pale.`,
-                )
-              : t(
-                  `Скрихме ${spots.hidden}, които вероятно не са пожари: слаби сигнали и места с постоянна топлина (заводи, ТЕЦ).`,
-                  `We hid ${spots.hidden} that are probably not fires: weak signals and spots with constant heat (factories, power plants).`,
-                )}
+            {spots.hidden === 1
+              ? showAll
+                ? t(
+                    "Показваме и 1 съмнително засичане: слаб сигнал или място с постоянна топлина (завод, ТЕЦ). То е бледо.",
+                    "Also showing 1 doubtful one: a weak signal or a spot with constant heat (a factory, a power plant). It is pale.",
+                  )
+                : t(
+                    "Скрихме 1 засичане, което вероятно не е пожар: слаб сигнал или място с постоянна топлина (завод, ТЕЦ).",
+                    "We hid 1 that is probably not a fire: a weak signal or a spot with constant heat (a factory, a power plant).",
+                  )
+              : showAll
+                ? t(
+                    `Показваме и ${spots.hidden} съмнителни: слаби сигнали и места с постоянна топлина (заводи, ТЕЦ). Те са бледи.`,
+                    `Also showing ${spots.hidden} doubtful ones: weak signals and spots with constant heat (factories, power plants). They are pale.`,
+                  )
+                : t(
+                    `Скрихме ${spots.hidden}, които вероятно не са пожари: слаби сигнали и места с постоянна топлина (заводи, ТЕЦ).`,
+                    `We hid ${spots.hidden} that are probably not fires: weak signals and spots with constant heat (factories, power plants).`,
+                  )}
           </p>
           <button onClick={() => setShowAll(!showAll)} aria-pressed={showAll} className="pressable hover-fill min-h-11 shrink-0 rounded-full px-3 text-[15px] font-medium text-accent">
             {showAll ? t("Скрий", "Hide") : t("Покажи", "Show")}
