@@ -206,7 +206,9 @@ function metDays(ts: MetEntry[]): (DailyWeather & { windDir: number })[] {
   });
   const out: (DailyWeather & { windDir: number })[] = [];
   for (const [date, i] of [...best.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    if (Math.abs(sofiaParts(t[i]).hour - 12) > 3) continue; // no reading near noon that day
+    // Later days need a reading near noon. For today the forecast may start after noon (in the evening it starts
+    // now), so the nearest reading stands in for noon.
+    if (date !== sofiaParts(t[0]).date && Math.abs(sofiaParts(t[i]).hour - 12) > 3) continue;
     const d = ts[i].data.instant.details;
     if (d.air_temperature == null || d.relative_humidity == null || d.wind_speed == null) continue;
     const mm = rain.filter((r) => r.from >= t[i] - 24 * 3600e3 && r.from < t[i]).reduce((s, r) => s + r.mm, 0);
