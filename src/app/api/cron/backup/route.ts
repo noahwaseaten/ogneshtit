@@ -3,6 +3,7 @@ import { backupAge, saveBackup } from "@/lib/backup";
 import { FIRES_BACKUP, getLiveFires } from "@/lib/fires";
 import { DANGER_BACKUP, getLiveDangerMap } from "@/lib/risk";
 import { WARNINGS_BACKUP, getLiveWarnings } from "@/lib/warnings";
+import { ORBITS_BACKUP, getLiveElements } from "@/lib/passes";
 import { RDG_BACKUP, getFireYear, getRdgs, statsBackupKey } from "@/lib/iag";
 
 // Saves a copy of every live data source to Vercel Blob, so the app can still show real (dated) data when a
@@ -21,6 +22,7 @@ export async function GET(req: Request) {
   const year = Number(today.slice(0, 4));
   const jobs: Record<string, () => Promise<unknown>> = {
     [FIRES_BACKUP]: () => getLiveFires(),
+    [ORBITS_BACKUP]: () => getLiveElements(),
     [DANGER_BACKUP]: () => getLiveDangerMap(),
     [WARNINGS_BACKUP]: () => getLiveWarnings(),
     [statsBackupKey(year)]: () => getFireYear(year, today),

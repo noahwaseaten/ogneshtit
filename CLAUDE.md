@@ -27,11 +27,13 @@ npm run typecheck      # run `npx next typegen` first if route types are stale
 npm run lint
 npm run test:fwi       # FWI against Van Wagner & Pickett reference values
 npm run test:fires     # satellite pixels → fires (grouping, confirmation, factories, missed passes)
+npm run test:passes    # orbit maths: predicted passes vs real FIRMS times, looks, gaps
+npm run orbits         # refresh the last-resort orbit copy in src/data/orbits.ts
 npm run build
 npm run map            # regenerate src/data/oblasts.ts from scripts/data/bg-oblasts.geojson
 ```
 
-CI (`.github/workflows/ci.yml`, job `check`) runs typegen, typecheck, lint, test:fwi, test:fires and build.
+CI (`.github/workflows/ci.yml`, job `check`) runs typegen, typecheck, lint, test:fwi, test:fires, test:passes and build.
 Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env.local`. Never commit it.
 
 ## Stack and conventions
@@ -91,6 +93,7 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
 | Fire danger | Open-Meteo hourly weather, 45 days back + 7 ahead, noon values → `src/lib/fwi.ts`. Fallback: MET Norway forecast carried forward from the saved FWI codes of the nearest oblast (`approx: "met-no"`) | `src/lib/risk.ts`, `/api/risk`, `/api/danger-map` |
 | Air quality | Open-Meteo air-quality API (CAMS) | `getAir()` in `risk.ts` |
 | Satellite fires | NASA FIRMS area API, 5 feeds (VIIRS SNPP/NOAA-20/NOAA-21 + MODIS), 2 days over the Balkans; days 3 to 12 for permanent sources. Fallback: FIRMS public 24 h files, then the Blob copy. Pixels → fires in `buildFires` (see the comment at the top of fires.ts) | `src/lib/fires.ts`, `src/lib/fire-types.ts`, `/api/fires` |
+| Satellite passes | Orbit elements from CelesTrak (`gp.php?CATNR=…&FORMAT=json`, 5 NORAD ids), SGP4 via `satellite.js`: when Bulgaria is inside each satellite's scan (VIIRS 56.3°, MODIS 55°). Elements: CelesTrak → Blob copy → `src/data/orbits.ts`; satellites with elements older than 21 days are left out. Passes over 45° to the side are not "sharp"; FIRMS data arrives up to ~3 h after a pass | `src/lib/passes.ts`, `src/lib/pass-types.ts`, `/api/passes`, `Satellites.tsx` |
 | Fires per oblast | ИАГ `POST https://www.iag.bg/fires/lang/1/index` body `ajax=1&FromDate=YYYY-MM-DD&ToDate=…` → HTML tables | `src/lib/iag.ts`, `/api/fire-stats`, `/api/fire-history` |
 | Truck tickets | ИАГ `GET /e_tickets/search?session=000&user_id=1&search_by=2|3&search_text=<digits>&lng=bg` and `/e_tickets/get?...&type=&ticket_id=&digest=xxxn` (JSON) | `iag.ts`, `/api/ticket`, `/api/ticket/[type]/[id]` |
 | Regional directorates | ИАГ pages `/struct/lang/1/type/R/id/{2..17}/unit_single`, scraped weekly (office phone, e-mail; the "дежурен телефон" on some pages is for forestry operators, not the public) | `iag.ts`, `src/data/rdg.ts`, `/api/rdg` |

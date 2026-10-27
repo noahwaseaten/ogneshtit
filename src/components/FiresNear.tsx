@@ -6,13 +6,14 @@ import { Phone, Navigation, ChevronRight, ArrowRight } from "lucide-react";
 import { useJson, useNow, type Loc } from "@/lib/client";
 import { distanceKm } from "@/lib/geo";
 import { bearingWord } from "@/lib/oblast";
-import { isCurrent, isReal, type Fire, type FiresResponse, type Sat } from "@/lib/fire-types";
+import { SAT_NAMES, isCurrent, isReal, type Fire, type FiresResponse } from "@/lib/fire-types";
 import { useI18n } from "@/i18n/client";
 import { formatters } from "@/i18n/format";
 import type { Lang } from "@/i18n/lang";
 import { placeName } from "@/i18n/names";
 import { BulgariaMap, type MapPoint } from "./BulgariaMap";
 import { FireTile, HeatMeter } from "./FireMark";
+import { NextLook } from "./Satellites";
 import { Sheet } from "./Sheet";
 
 export const NEAR_KM = 50;
@@ -34,8 +35,6 @@ export const HEAT = [
 ] as const;
 export const heatRank = (frp: number) => Math.max(0, HEAT.findIndex((h) => frp < h.max));
 export const heatColor = (frp: number) => HEAT[heatRank(frp)].color;
-
-export const SAT_NAMES: Record<Sat, string> = { SNPP: "Suomi NPP", "NOAA-20": "NOAA-20", "NOAA-21": "NOAA-21", Terra: "Terra", Aqua: "Aqua" };
 
 /** "18 км на северозапад" / "18 km northwest" */
 const where = (s: Spot, lang: Lang) => (lang === "bg" ? `${Math.round(s.km)} км на ${s.dir}` : `${Math.round(s.km)} km ${s.dir}`);
@@ -227,6 +226,7 @@ function FireDetails({ f }: { f: Spot }) {
         <p className="text-[15px] leading-snug">{why}</p>
         {after && <p className="pt-2 text-[15px] leading-snug">{after}</p>}
         {old && <p className="pt-2 text-[15px] font-medium leading-snug">{t(`Последно видян ${agoLong(f.last)}.`, `Last seen ${agoLong(f.last)}.`)}</p>}
+        {f.status !== "static" && f.missed === 0 && !old && <NextLook />}
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 text-[15px] tabular-nums">
         <div>
@@ -275,8 +275,8 @@ function FireDetails({ f }: { f: Spot }) {
       </div>
       <p className="pt-3 text-[14px] leading-snug text-muted">
         {t(
-          "Звъннете, ако виждате дим или огън на място. Точката от спътника сама по себе си не е повод за обаждане. Спътниците минават над България около 13 до 15 ч. и около 1 до 4 ч. през нощта; между две преминавания огън може да пламне или угасне, без да го видят.",
-          "Call if you can see smoke or flames where you are. A satellite dot on its own is not a reason to call. Satellites pass over Bulgaria around 1 to 3 pm and around 1 to 4 am; between passes a fire can start or go out unseen.",
+          "Звъннете, ако виждате дим или огън на място. Точката от спътника сама по себе си не е повод за обаждане. Между две преминавания на спътник огън може да пламне или угасне, без да го видят.",
+          "Call if you can see smoke or flames where you are. A satellite dot on its own is not a reason to call. Between two satellite passes a fire can start or go out unseen.",
         )}
       </p>
     </>

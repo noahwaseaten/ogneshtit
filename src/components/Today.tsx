@@ -8,6 +8,7 @@ import { LocationPicker } from "./LocationPicker";
 import { RiskCard, Forecast } from "./RiskCard";
 import { FiresSummary } from "./FiresNear";
 import { Conditions } from "./Conditions";
+import { Satellites } from "./Satellites";
 import { Alerts } from "./Alerts";
 import { useI18n } from "@/i18n/client";
 import { localeOf } from "@/i18n/lang";
@@ -40,6 +41,7 @@ export function Today() {
       <div className="min-w-0 lg:sticky lg:top-8">
         <div className="flex flex-col gap-8">
           <FiresSummary loc={loc} />
+          <Satellites />
           <Alerts help />
         </div>
       </div>

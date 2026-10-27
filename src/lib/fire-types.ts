@@ -1,6 +1,7 @@
 // Shared by the server (fires.ts) and the browser. No server-only imports here.
 
 export type Sat = "SNPP" | "NOAA-20" | "NOAA-21" | "Terra" | "Aqua";
+export const SAT_NAMES: Record<Sat, string> = { SNPP: "Suomi NPP", "NOAA-20": "NOAA-20", "NOAA-21": "NOAA-21", Terra: "Terra", Aqua: "Aqua" };
 export type Confidence = "low" | "nominal" | "high";
 
 export type Detection = { lat: number; lon: number; time: string; sat: Sat; conf: Confidence; frp: number; night: boolean };
@@ -43,6 +44,8 @@ export type FiresResponse = {
   lastPass: string | null;
   /** Satellite feeds that did not answer this time. */
   failed: Sat[];
+  /** Passes that detected heat somewhere in the region, to tell which predicted looks found anything. */
+  seen?: { sat: Sat; t: string }[];
   /** Set when this is a saved copy because NASA did not answer. */
   backupFrom?: string;
 };

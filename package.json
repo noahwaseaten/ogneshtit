@@ -9,9 +9,11 @@
     "lint": "eslint",
     "test:fwi": "tsx scripts/test-fwi.ts",
     "test:fires": "tsx scripts/test-fires.ts",
+    "test:passes": "tsx scripts/test-passes.ts",
     "typecheck": "tsc --noEmit",
     "map": "node scripts/oblasts.mjs",
-    "border": "node scripts/bulgaria.mjs"
+    "border": "node scripts/bulgaria.mjs",
+    "orbits": "node scripts/orbits.mjs"
   },
   "dependencies": {
     "@fontsource-variable/onest": "5.3.1",
@@ -20,6 +22,7 @@
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "satellite.js": "7.1.0",
     "vaul": "1.1.2",
     "web-push": "3.6.7"
   },
