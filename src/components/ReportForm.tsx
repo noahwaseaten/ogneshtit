@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
+import { Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check, ChevronDown } from "lucide-react";
 import { getPosition, useLocation } from "@/lib/client";
 import { useI18n } from "@/i18n/client";
 import { formatters } from "@/i18n/format";
 import { placeName } from "@/i18n/names";
 import { nearestRdg, telOf, useRdgs } from "./rdg";
+import { Sheet } from "./Sheet";
 
 // What was seen. The report itself is always written in Bulgarian, because it goes to a Bulgarian office.
 const KINDS: [string, string][] = [
@@ -27,6 +28,7 @@ type Photo = { file: File; url: string };
  */
 export function ReportForm() {
   const [kindIx, setKindIx] = useState(0);
+  const [picking, setPicking] = useState(false);
   const kind = KINDS[kindIx][0];
   const { t, tp, lang } = useI18n();
   const [pos, setPos] = useState<{ lat: number; lon: number; acc: number } | null>(null);
@@ -262,24 +264,43 @@ export function ReportForm() {
       <div className="mt-6 rounded-2xl bg-surface p-4">
         <p className="text-[13px] font-medium text-muted">{t("Изпращате до", "Sending to")}</p>
         {rdgs ? (
-          <label className="mt-1 block">
-            <span className="sr-only">{t("Регионална дирекция по горите", "Regional forest directorate")}</span>
-            <select
-              value={rdg?.id ?? ""}
-              onChange={(e) => setRdgId(Number(e.target.value))}
-              className="min-h-11 w-full rounded-xl bg-transparent text-[17px] font-semibold outline-none"
-            >
-              {!rdg && <option value="">{t("Изберете регионална дирекция", "Choose a regional directorate")}</option>}
-              {rdgs.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {placeName(r.name, lang)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <button
+            onClick={() => setPicking(true)}
+            className="pressable -mx-2 mt-0.5 flex min-h-11 w-[calc(100%+1rem)] items-center justify-between gap-2 rounded-xl px-2 text-left text-[17px] font-semibold hover:bg-line/50"
+          >
+            <span className="truncate">{rdg ? placeName(rdg.name, lang) : t("Изберете регионална дирекция", "Choose a regional directorate")}</span>
+            <ChevronDown size={18} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
+          </button>
         ) : (
           <div className="skeleton mt-1 h-8 rounded-lg" />
         )}
+        {/* Our own list instead of the system <select>, which looks out of place on Windows and Android. */}
+        <Sheet
+          open={picking}
+          onClose={() => setPicking(false)}
+          title={t("Регионална дирекция по горите", "Regional forest directorate")}
+          description={t("Сигналът отива до дирекцията, в чийто район е мястото.", "The report goes to the directorate whose area the place is in.")}
+        >
+          <ul className="-mx-2">
+            {rdgs?.map((r) => (
+              <li key={r.id}>
+                <button
+                  onClick={() => {
+                    setRdgId(r.id);
+                    setPicking(false);
+                  }}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-3 text-left hover:bg-line/50 active:bg-line"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-medium">{placeName(r.name, lang)}</span>
+                    {auto?.id === r.id && <span className="block text-[13px] text-muted">{t("Най-близката", "The closest")}</span>}
+                  </span>
+                  {rdg?.id === r.id && <Check size={20} strokeWidth={2} className="shrink-0 text-accent" aria-label={t("Избрано", "Selected")} />}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Sheet>
         {rdg && (
           <p className="pt-1 text-[13px] text-muted">
             {auto?.id === rdg.id

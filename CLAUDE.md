@@ -53,8 +53,7 @@ Env: `FIRMS_MAP_KEY` (NASA FIRMS). It lives only in Vercel (sensitive) and `.env
   `.pressable` (scale .96 on press), tabular numbers for data, concentric radii, shadows for elevation and borders
   for structure, no `transition: all`, icon swaps via `.swap`, colour never the only signal, contrast ≥ 4.5:1,
   `prefers-reduced-motion` respected.
-- Satellite fires are coloured by age (`--fire-new` under 6 h, `--fire-day` under 24 h, `--fire-old` older; `FIRE_AGES` in
-  FiresNear). Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
+- Satellite fires are coloured by heat (FRP: `--heat-1..4`, `HEAT` in FiresNear); fires older than 24 h are faded. Settings uses the same cards, headings and pill segmented control as the rest of the app (`Settings.tsx`).
 
 ## Languages (Bulgarian and English)
 

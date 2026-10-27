@@ -57,8 +57,8 @@ export function Sidebar() {
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-12 items-center gap-3 rounded-full px-4 text-[15px] ${
-                    active ? "bg-tonal font-semibold text-content" : "font-medium text-muted hover:bg-line/60 hover:text-content"
+                  className={`flex min-h-12 items-center gap-3 rounded-full px-4 text-[15px] transition-colors duration-150 ${
+                    active ? "bg-tonal font-semibold text-content" : "font-medium text-muted hover:bg-line hover:text-content"
                   }`}
                 >
                   <Icon size={20} strokeWidth={active ? 2.25 : 1.75} aria-hidden className={active ? "text-accent" : undefined} />
@@ -74,14 +74,13 @@ export function Sidebar() {
         <Link
           href={SETTINGS}
           aria-current={isActive(path, SETTINGS) ? "page" : undefined}
-          className={`flex min-h-12 items-center gap-3 rounded-full px-4 text-[15px] ${
-            isActive(path, SETTINGS) ? "bg-tonal font-semibold text-content" : "font-medium text-muted hover:bg-line/60 hover:text-content"
+          className={`flex min-h-12 items-center gap-3 rounded-full px-4 text-[15px] transition-colors duration-150 ${
+            isActive(path, SETTINGS) ? "bg-tonal font-semibold text-content" : "font-medium text-muted hover:bg-line hover:text-content"
           }`}
         >
           <Settings size={20} strokeWidth={isActive(path, SETTINGS) ? 2.25 : 1.75} aria-hidden className={isActive(path, SETTINGS) ? "text-accent" : undefined} />
           {t("Настройки", "Settings")}
         </Link>
-        <ThemeControl compact />
         <a href="tel:112" className="pressable flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#c7361f] text-[15px] font-semibold text-white">
           <Phone size={18} strokeWidth={2} aria-hidden />
           {t("Спешно: 112", "Emergency: 112")}

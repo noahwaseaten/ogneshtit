@@ -88,13 +88,7 @@ export function SettingsView() {
         ))}
       </SettingsGroup>
 
-      <SettingsGroup
-        title={t("За приложението", "About")}
-        note={t(
-          "Нищо за вас не се пази на сървър: мястото и настройките стоят само в телефона.",
-          "Nothing about you is kept on a server: your place and settings stay on your phone.",
-        )}
-      >
+      <SettingsGroup title={t("За приложението", "About")}>
         <SettingsRow
           title={t("Направено от Камен", "Made by Noah")}
           subtitle={t("Училищен проект за защита на гората, ПГЕА", "A school project on protecting the forest")}

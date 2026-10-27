@@ -14,8 +14,13 @@ import { placeName } from "@/i18n/names";
 // React only re-renders when the gesture ends, which is when markers are re-clustered.
 
 /** `color` and `rank` let points say how fresh they are; a group takes the colour of its lowest rank. */
-export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number };
-const pointColor = (pts: MapPoint[]) => [...pts].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))[0]?.color ?? "var(--ember)";
+export type MapPoint = { id: string; lat: number; lon: number; label: string; color?: string; rank?: number; faded?: boolean };
+/** Floating map control surface. */
+const ctl = "bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] transition-colors duration-150";
+
+const lead = (pts: MapPoint[]) => [...pts].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))[0];
+const pointColor = (pts: MapPoint[]) => lead(pts)?.color ?? "var(--ember)";
+const pointOpacity = (pts: MapPoint[]) => (pts.every((p) => p.faded) ? 0.55 : 1);
 
 const MAJOR = new Set(["София", "Пловдив", "Варна", "Бургас", "Русе", "Плевен", "Стара Загора", "Благоевград"]);
 const MAX_ZOOM = 40;
@@ -532,7 +537,7 @@ export function BulgariaMap({
                     <g key={p.id} role="button" tabIndex={0} aria-label={p.label} className="cursor-pointer outline-none" onClick={() => tap(() => onPoints?.([p]))} onKeyDown={onKey(() => onPoints?.([p]))}>
                       <line x1={c.x} y1={c.y} x2={x} y2={y} stroke="var(--muted)" strokeWidth={1 * upp} />
                       <circle cx={x} cy={y} r={14 * upp} fill="transparent" />
-                      <circle cx={x} cy={y} r={5.5 * upp} fill={p.color ?? "var(--ember)"} stroke="var(--card)" strokeWidth={1.5 * upp} />
+                      <circle cx={x} cy={y} r={5.5 * upp} fill={p.color ?? "var(--ember)"} fillOpacity={p.faded ? 0.55 : 1} stroke="var(--card)" strokeWidth={1.5 * upp} />
                     </g>
                   );
                 })}
@@ -551,7 +556,7 @@ export function BulgariaMap({
               onKeyDown={onKey(() => openCluster(c))}
             >
               <circle cx={c.x} cy={c.y} r={22 * upp} fill="transparent" />
-              <circle cx={c.x} cy={c.y} r={rad} fill={pointColor(c.pts)} stroke="var(--card)" strokeWidth={1.5 * upp} pointerEvents="none" />
+              <circle cx={c.x} cy={c.y} r={rad} fill={pointColor(c.pts)} fillOpacity={pointOpacity(c.pts)} stroke="var(--card)" strokeWidth={1.5 * upp} pointerEvents="none" />
               {n > 1 && (
                 <text x={c.x} y={c.y} dy="0.35em" textAnchor="middle" fontSize={fontPx} fontWeight={600} fill="#fff" pointerEvents="none" style={{ fontVariantNumeric: "tabular-nums" }}>
                   {n}
@@ -563,35 +568,46 @@ export function BulgariaMap({
       </svg>
 
       {zoomable && (
-        <div className="absolute bottom-3 right-3 flex flex-col items-end gap-2" onPointerDown={(e) => e.stopPropagation()}>
+        <>
+          {/* Back to all of Bulgaria: top right, away from the zoom and location buttons, as in map apps. */}
           {zoom > 1.05 && (
             <button
               onClick={() => animateTo(fullVB(r))}
+              onPointerDown={(e) => e.stopPropagation()}
               aria-label={t("Цяла България", "All of Bulgaria")}
-              className="pressable grid size-11 place-items-center rounded-full bg-card text-content shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
+              className={`${ctl} pressable absolute right-3 top-3 grid size-11 place-items-center rounded-full text-content hover:bg-[color-mix(in_oklab,var(--card),var(--content)_8%)]`}
             >
               <Maximize size={18} strokeWidth={2} aria-hidden />
             </button>
           )}
-          {/* Phones zoom with fingers, as in map apps; buttons only where there is a mouse. */}
-          <div className="hidden flex-col overflow-hidden rounded-xl bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] [@media(pointer:fine)]:flex">
-            <button onClick={() => animateTo(zoomBy(2))} disabled={zoom >= MAX_ZOOM} aria-label={t("Приближи", "Zoom in")} className="grid size-10 place-items-center hover:bg-line/60 disabled:opacity-35">
-              <Plus size={18} strokeWidth={2} aria-hidden />
-            </button>
-            <button onClick={() => animateTo(zoomBy(0.5))} disabled={zoom <= 1.01} aria-label={t("Отдалечи", "Zoom out")} className="grid size-10 place-items-center border-t border-line hover:bg-line/60 disabled:opacity-35">
-              <Minus size={18} strokeWidth={2} aria-hidden />
-            </button>
+          {/* One column, one width: zoom (only where there is a mouse; phones pinch) above "my location". */}
+          <div className="absolute bottom-3 right-3 flex w-11 flex-col gap-2" onPointerDown={(e) => e.stopPropagation()}>
+            <div className={`${ctl} hidden flex-col overflow-hidden rounded-full text-content [@media(pointer:fine)]:flex`}>
+              <button
+                onClick={() => animateTo(zoomBy(2))}
+                disabled={zoom >= MAX_ZOOM}
+                aria-label={t("Приближи", "Zoom in")}
+                className="grid h-11 place-items-center transition-colors duration-150 hover:bg-line/60 disabled:opacity-35"
+              >
+                <Plus size={18} strokeWidth={2} aria-hidden />
+              </button>
+              <span className="mx-2.5 h-px bg-line" aria-hidden />
+              <button
+                onClick={() => animateTo(zoomBy(0.5))}
+                disabled={zoom <= 1.01}
+                aria-label={t("Отдалечи", "Zoom out")}
+                className="grid h-11 place-items-center transition-colors duration-150 hover:bg-line/60 disabled:opacity-35"
+              >
+                <Minus size={18} strokeWidth={2} aria-hidden />
+              </button>
+            </div>
+            {me && (
+              <button onClick={locate} aria-label={t("Покажи моето място", "Show my location")} className={`${ctl} pressable grid size-11 place-items-center rounded-full text-[#1f6fd1] hover:bg-[color-mix(in_oklab,var(--card),var(--content)_8%)]`}>
+                <LocateFixed size={20} strokeWidth={2} aria-hidden />
+              </button>
+            )}
           </div>
-          {me && (
-            <button
-              onClick={locate}
-              aria-label={t("Покажи моето място", "Show my location")}
-              className="pressable grid size-12 place-items-center rounded-full bg-card text-[#1f6fd1] shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
-            >
-              <LocateFixed size={22} strokeWidth={2} aria-hidden />
-            </button>
-          )}
-        </div>
+        </>
       )}
     </div>
   );
