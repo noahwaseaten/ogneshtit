@@ -34,7 +34,7 @@ export default function LossMap() {
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>(PERIODS[0]);
   const [showNatura, setShowNatura] = useState(true);
   const [site, setSite] = useState<Site | null>(null);
-  const natura = useJson<GeoJSON.FeatureCollection>("/api/natura");
+  const natura = useJson<GeoJSON.FeatureCollection>("/natura-bg.json");
   const latest = useRef({ natura: natura.data, showNatura });
 
   const sync = () => {
@@ -168,7 +168,9 @@ export default function LossMap() {
           <span className="size-3.5 rounded-[3px] border border-[#1f5b3e] bg-[#1f5b3e]/15" aria-hidden /> Натура 2000
         </li>
       </ul>
-      {natura.error && !natura.data && <p className="px-1 text-[14px] text-ember">{natura.error}</p>}
+      {natura.error && !natura.data && (
+        <p className="px-1 text-[14px] text-muted">Границите на Натура 2000 не са налични в момента.</p>
+      )}
 
       <Drawer.Root open={!!site} onOpenChange={(o) => !o && setSite(null)}>
         <Drawer.Portal>

@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prebuild": "node scripts/copy-worker.mjs",
-    "predev": "node scripts/copy-worker.mjs",
+    "prebuild": "node scripts/prebuild.mjs",
+    "predev": "node scripts/prebuild.mjs",
     "test:fwi": "tsx scripts/test-fwi.ts"
   },
   "dependencies": {
