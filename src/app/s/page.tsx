@@ -4,7 +4,7 @@ import { OpenShared } from "./OpenShared";
 import { getRisk } from "@/lib/risk";
 import { dangerByKey } from "@/lib/danger";
 import { DANGER_HEX } from "@/lib/og";
-import { DiscordCard, buttons, image, text } from "@/lib/discord";
+import { DiscordCard, buttons, image } from "@/lib/discord";
 
 type Props = { searchParams: Promise<Record<string, string | undefined>> };
 
@@ -23,15 +23,15 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return {
     title,
     description: "Колко лесно пламва и се разраства горски пожар днес. Прогноза за 5 дни в ОгнеЩит.",
-    openGraph: { title, images: [{ url: `/s/og?${q}`, width: 1200, height: 630 }] },
+    openGraph: { title, images: [{ url: `/s/og?${q}`, width: 1200, height: 520 }] },
     twitter: { card: "summary_large_image", title, images: [`/s/og?${q}`] },
     robots: { index: false },
   };
 }
 
-/** Discord card for a shared place: today's level, what it means, the forecast image and links. */
+/** Discord card for a shared place: the image with today's level, in the danger colour, and two links. */
 async function SharedCard({ searchParams }: Props) {
-  const { name, lat, lon, ok, q } = read(await searchParams);
+  const { lat, lon, ok, q } = read(await searchParams);
   if (!ok) return null;
   const r = (x: number) => Math.round(x * 100) / 100;
   let risk;
@@ -41,14 +41,11 @@ async function SharedCard({ searchParams }: Props) {
     return null; // Discord then uses the Open Graph tags.
   }
   const d = dangerByKey(risk.today.danger);
-  const place = name || "България";
   return (
     <DiscordCard
       accent={DANGER_HEX[d.key]}
       components={[
-        text(`-# ОгнеЩит · опасност от горски пожар днес\n## ${place}: ${d.label.toLowerCase()}\n${d.meaning}`),
-        image(`/s/og?${q}`, `Опасност от пожар днес и следващите 5 дни, ${place}`),
-        text(`**Какво да направите:** ${d.advice}`),
+        image(`/s/og?${q}`),
         buttons(["Отвори прогнозата", `/s?${q}`], ["Карта на пожарите", "/karta"]),
       ]}
     />

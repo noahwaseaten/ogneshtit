@@ -172,32 +172,48 @@ function ShareButton({ text, loc }: { text: string; loc: Loc }) {
   );
 }
 
+/**
+ * The next five days as five columns. Each column's height and colour show the level (1 to 6), so the
+ * week reads at a glance; the number and the word repeat it, so colour is never the only signal.
+ */
 export function Forecast({ data }: { data: RiskResponse }) {
+  // The worst day, named in a sentence under the heading: "Най-висока: екстремна в събота".
+  const worstAt = data.forecast.reduce((m, f, i) => (dangerByKey(f.danger).index > dangerByKey(data.forecast[m].danger).index ? i : m), 0);
+  const w = dangerByKey(data.forecast[worstAt].danger);
+  const when =
+    worstAt === 0
+      ? "утре"
+      : inPlace(new Intl.DateTimeFormat("bg-BG", { weekday: "long", timeZone: "UTC" }).format(new Date(data.forecast[worstAt].date + "T00:00:00Z")));
   return (
     <section aria-labelledby="fc-title" className="enter">
       <h2 id="fc-title" className="px-1 font-display text-[20px] font-semibold">
         Следващите 5 дни
       </h2>
-      <ol className="mt-3 grid grid-cols-5 rounded-[20px] bg-card py-1">
-        {data.forecast.map((f) => {
+      <p className="px-1 pt-0.5 text-[15px] text-muted">
+        Най-висока: <span className="font-semibold text-content">{w.label.toLowerCase()}</span> {when}
+      </p>
+      <ol className="mt-3 grid grid-cols-5 gap-1.5 rounded-[28px] bg-card p-2">
+        {data.forecast.map((f, i) => {
           const d = dangerByKey(f.danger);
           return (
-            <li key={f.date} className="flex flex-col items-center gap-1.5 px-0.5 py-3">
-              <span className="text-[13px] font-medium capitalize text-muted">{weekday(f.date)}</span>
-              {/* Colour plus a level number: never colour alone. */}
-              <span
-                className="grid size-9 place-items-center rounded-full text-[15px] font-bold tabular-nums"
-                style={{ background: d.color, color: d.onColor }}
-                aria-hidden
-              >
-                {d.index + 1}
+            <li key={f.date} className="flex flex-col items-center gap-2 rounded-[22px] px-0.5 pb-2.5 pt-3">
+              <span className="text-[14px] font-semibold capitalize leading-none">{i === 0 ? "Утре" : weekday(f.date)}</span>
+              <span className="relative flex h-[120px] w-full max-w-[52px] items-end overflow-hidden rounded-[18px] bg-line/60" aria-hidden>
+                <span
+                  className="rise flex w-full justify-center rounded-[18px] pt-2 font-display text-[20px] font-bold tabular-nums"
+                  style={{ height: `${30 + d.index * 14}%`, background: d.color, color: d.onColor, transitionDelay: `${i * 40}ms` }}
+                >
+                  {d.index + 1}
+                </span>
               </span>
-              <span className="text-center text-[12px] font-medium leading-tight [text-wrap:balance]">{d.label}</span>
-              <span className="text-[12px] tabular-nums text-muted" aria-hidden>
+              <span className="min-h-[2lh] text-center text-[12px] font-semibold leading-tight [text-wrap:balance]" aria-hidden>
+                {d.label}
+              </span>
+              <span className="text-[13px] font-medium tabular-nums text-muted" aria-hidden>
                 {f.temp}°
               </span>
               <span className="sr-only">
-                {weekday(f.date)}: опасност {d.label.toLowerCase()}, {f.temp} градуса
+                {i === 0 ? "Утре" : weekday(f.date)}: опасност {d.label.toLowerCase()}, ниво {d.index + 1} от 6, {f.temp} градуса
               </span>
             </li>
           );

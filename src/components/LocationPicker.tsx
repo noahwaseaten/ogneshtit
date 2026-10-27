@@ -5,7 +5,6 @@ import { Check, ChevronDown, LocateFixed, MapPin, Search } from "lucide-react";
 import { PLACES } from "@/data/places";
 import { useLocation, type Loc } from "@/lib/client";
 import { Sheet } from "./Sheet";
-import { MyPlacesEdit } from "./MyPlaces";
 
 type GeoResult = { id: number; name: string; latitude: number; longitude: number; admin1?: string; admin2?: string; feature_code?: string };
 
@@ -116,7 +115,6 @@ export function LocationPicker() {
           </div>
         ) : (
           <>
-            <MyPlacesEdit onPick={pick} />
             <p className="px-1 pb-1 pt-5 text-[14px] font-medium text-muted">Областни градове</p>
             <ul className="-mx-2 grid grid-cols-1 sm:grid-cols-2">
               {PLACES.map((p) => {

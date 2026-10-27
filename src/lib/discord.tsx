@@ -56,7 +56,7 @@ export function PageCard({ title, body, path }: { title: string; body: string; p
     <DiscordCard
       components={[
         text(`-# ОгнеЩит\n## ${title}\n${body}`),
-        image("/opengraph-image", "ОгнеЩит: опасност от горски пожар днес"),
+        image("/opengraph-image"),
         buttons(["Отвори", path], ["Опасност днес", "/"]),
       ]}
     />
