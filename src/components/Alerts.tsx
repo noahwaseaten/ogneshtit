@@ -7,6 +7,10 @@ import { useLocation } from "@/lib/client";
 import { oblastAt } from "@/lib/oblast";
 import type { Prefs } from "@/lib/alerts";
 import { useInstall } from "./Install";
+import { ButtonGroup, SettingsGroup } from "./Settings";
+import { useI18n } from "@/i18n/client";
+import { placeName } from "@/i18n/names";
+import { SETTINGS } from "./Shell";
 
 const KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const STORE = "ogneshtit:alerts";
@@ -58,22 +62,9 @@ function useHidden() {
 
 type State = "loading" | "unsupported" | "needs-install" | "denied" | "off" | "on";
 
+/** Settings-style connected button group for one preference. */
 function Segmented<T extends string | number>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
-  return (
-    <div role="radiogroup" aria-label={label} className="grid rounded-full bg-line p-1" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
-      {options.map(([v, text]) => (
-        <button
-          key={String(v)}
-          role="radio"
-          aria-checked={value === v}
-          onClick={() => onChange(v)}
-          className={`min-h-9 rounded-full px-1 text-[14px] font-semibold ${value === v ? "bg-tonal text-content" : "text-muted"}`}
-        >
-          {text}
-        </button>
-      ))}
-    </div>
-  );
+  return <ButtonGroup label={label} value={value} options={options.map(([v, text]) => ({ value: v, label: text }))} onChange={onChange} />;
 }
 
 /**
@@ -89,6 +80,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const hidden = useHidden();
+  const { t, lang } = useI18n();
 
   useEffect(() => {
     (async () => {
@@ -108,7 +100,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
   const place = () => {
     if (loc.source !== "gps") return { lat: loc.lat, lon: loc.lon, label: loc.label };
     const o = oblastAt(loc.lat, loc.lon);
-    return { lat: loc.lat, lon: loc.lon, label: o ? `област ${o.name.replace(/ (град|област)$/, "")}` : "вашето място" };
+    return { lat: loc.lat, lon: loc.lon, label: o ? `област ${o.name.replace(/ (град|област)$/, "")}` : "Тук" };
   };
 
   const save = async (next: Prefs, subscribe = false) => {
@@ -119,7 +111,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
       const reg = await navigator.serviceWorker.ready;
       const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(KEY) }));
       const p = place();
-      const res = await fetch("/api/push", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ subscription: sub.toJSON(), place: p, prefs: next }) });
+      const res = await fetch("/api/push", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ subscription: sub.toJSON(), place: p, prefs: next, lang }) });
       if (!res.ok) throw new Error();
       const s = { label: p.label, prefs: next };
       localStorage.setItem(STORE, JSON.stringify(s));
@@ -127,7 +119,7 @@ export function Alerts({ help = false }: { help?: boolean }) {
       setPrefs(next);
       setState("on");
     } catch {
-      setNote("Не успяхме да запазим. Опитайте пак.");
+      setNote(t("Не успяхме да запазим. Опитайте пак.", "We couldn't save that. Try again."));
     } finally {
       setBusy(false);
     }
@@ -156,26 +148,26 @@ export function Alerts({ help = false }: { help?: boolean }) {
     if (!sub) return;
     const res = await fetch("/api/push/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
     const body = await res.json().catch(() => ({}));
-    setNote(res.ok ? "Изпратихме пробно известие. Трябва да се появи до няколко секунди." : body.error ?? "Не успяхме да изпратим.");
+    setNote(
+      res.ok
+        ? t("Изпратихме пробно известие. Трябва да се появи до няколко секунди.", "We sent a test alert. It should appear within a few seconds.")
+        : body.error ?? t("Не успяхме да изпратим.", "We couldn't send it."),
+    );
   };
 
   if (state === "loading" || state === "unsupported" || (help && hidden)) return null;
-  const here = place().label;
-  const moved = state === "on" && saved && saved.label !== here;
+  const here = placeName(place().label, lang);
+  const savedLabel = saved ? placeName(saved.label, lang) : here;
+  const moved = state === "on" && saved && saved.label !== place().label;
 
   return (
-    <section id={help ? undefined : "izvestiya"} aria-labelledby={help ? undefined : "alerts-title"} className="scroll-mt-20">
-      {!help && (
-        <h2 id="alerts-title" className="px-1 pb-2 text-[17px] font-semibold">
-          Известия
-        </h2>
-      )}
-      <div className="relative rounded-[20px] bg-card p-4">
+    <Frame help={help} title={t("Известия", "Alerts")}>
+      <div className={`relative bg-card p-4 ${help ? "rounded-[20px]" : ""}`}>
         {help && (
           <button
             onClick={hideCard}
-            aria-label="Скрий от началната страница"
-            title="Скрий. Известията остават в „За ОгнеЩит“."
+            aria-label={t("Скрий от началната страница", "Hide from the home screen")}
+            title={t("Скрий. Известията остават в Настройки.", "Hide. Alerts stay in Settings.")}
             className="pressable absolute right-1.5 top-1.5 grid size-11 place-items-center rounded-full text-muted hover:bg-line/60"
           >
             <X size={18} strokeWidth={2} aria-hidden />
@@ -188,15 +180,18 @@ export function Alerts({ help = false }: { help?: boolean }) {
             <BellOff size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-muted" aria-hidden />
           )}
           <div className="min-w-0 flex-1">
-            <p className={`text-[16px] font-semibold ${help ? "pr-8" : ""}`}>{state === "on" ? `Известия за ${saved?.label ?? here}` : "Известия при опасност"}</p>
+            <p className={`text-[16px] font-semibold ${help ? "pr-8" : ""}`}>{state === "on" ? t(`Известия за ${savedLabel}`, `Alerts for ${savedLabel}`) : t("Известия при опасност", "Danger alerts")}</p>
             <p className="pt-0.5 text-[14px] leading-snug text-muted">
               {state === "needs-install"
-                ? "На iPhone известията работят, след като добавите ОгнеЩит на началния екран."
+                ? t("На iPhone известията работят, след като добавите ОгнеЩит на началния екран.", "On iPhone, alerts work once you add Fire Shield to your Home Screen.")
                 : state === "denied"
-                  ? "Известията са спрени за този сайт в настройките на браузъра. Разрешете ги там."
+                  ? t("Известията са спрени за този сайт в настройките на браузъра. Разрешете ги там.", "Notifications are blocked for this site in your browser settings. Allow them there.")
                   : state === "on"
-                    ? "Пишем ви само при опасност или нов огън наблизо, никога през нощта."
-                    : "Само когато опасността е висока, има нов огън наблизо или оранжев код. Никога през нощта."}
+                    ? t("Пишем ви само при опасност или нов огън наблизо, никога през нощта.", "We only message you about danger or a new fire nearby, never at night.")
+                    : t(
+                        "Само когато опасността е висока, има нов огън наблизо или оранжев код. Никога през нощта.",
+                        "Only when the danger is high, a new fire is spotted nearby or there's an orange warning. Never at night.",
+                      )}
             </p>
           </div>
         </div>
@@ -207,47 +202,47 @@ export function Alerts({ help = false }: { help?: boolean }) {
             disabled={busy}
             className="pressable mt-3 flex min-h-11 w-full items-center justify-center rounded-full bg-accent px-4 text-[15px] font-semibold text-accent-content disabled:opacity-60"
           >
-            Включи за {here}
+            {t(`Включи за ${here}`, `Turn on for ${here}`)}
           </button>
         )}
 
         {state === "on" && !help && (
           <div className="flex flex-col gap-4 pt-4">
             <div className="flex flex-col gap-1.5">
-              <p className="text-[14px] font-medium">Опасност от пожар</p>
+              <p className="text-[14px] font-medium">{t("Опасност от пожар", "Fire danger")}</p>
               <Segmented
-                label="Опасност от пожар"
+                label={t("Опасност от пожар", "Fire danger")}
                 value={prefs.danger}
                 options={[
-                  ["off", "Не"],
-                  ["high", "От висока"],
-                  ["veryhigh", "От много висока"],
+                  ["off", t("Не", "Off")],
+                  ["high", t("От висока", "High+")],
+                  ["veryhigh", t("От много висока", "Very high+")],
                 ]}
                 onChange={(v) => save({ ...prefs, danger: v })}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-[14px] font-medium">Нов огън от спътник</p>
+              <p className="text-[14px] font-medium">{t("Нов огън от спътник", "New fire seen by satellite")}</p>
               <Segmented
-                label="Нов огън от спътник"
+                label={t("Нов огън от спътник", "New fire seen by satellite")}
                 value={prefs.firesKm}
                 options={[
-                  [0, "Не"],
-                  [10, "10 км"],
-                  [25, "25 км"],
-                  [50, "50 км"],
+                  [0, t("Не", "Off")],
+                  [10, t("10 км", "10 km")],
+                  [25, t("25 км", "25 km")],
+                  [50, t("50 км", "50 km")],
                 ]}
                 onChange={(v) => save({ ...prefs, firesKm: v })}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-[14px] font-medium">Оранжев и червен код на НИМХ</p>
+              <p className="text-[14px] font-medium">{t("Оранжев и червен код на НИМХ", "Orange and red weather warnings")}</p>
               <Segmented
-                label="Предупреждения на НИМХ"
+                label={t("Предупреждения на НИМХ", "Weather warnings")}
                 value={prefs.warnings ? "on" : "off"}
                 options={[
-                  ["off", "Не"],
-                  ["on", "Да"],
+                  ["off", t("Не", "Off")],
+                  ["on", t("Да", "On")],
                 ]}
                 onChange={(v) => save({ ...prefs, warnings: v === "on" })}
               />
@@ -259,17 +254,17 @@ export function Alerts({ help = false }: { help?: boolean }) {
           <div className="flex flex-wrap gap-2 pt-4">
             {moved && (
               <button onClick={() => save(prefs)} disabled={busy} className="pressable min-h-11 rounded-full bg-tonal px-4 text-[15px] font-semibold disabled:opacity-60">
-                Смени на {here}
+                {t(`Смени на ${here}`, `Switch to ${here}`)}
               </button>
             )}
             {!help && (
               <button onClick={test} className="pressable min-h-11 rounded-full bg-line px-4 text-[15px] font-semibold">
-                Пробно известие
+                {t("Пробно известие", "Send a test")}
               </button>
             )}
             {!help && (
               <button onClick={disable} disabled={busy} className="pressable min-h-11 rounded-full px-4 text-[15px] font-medium text-muted hover:bg-line/60 disabled:opacity-60">
-                Изключи
+                {t("Изключи", "Turn off")}
               </button>
             )}
           </div>
@@ -282,12 +277,25 @@ export function Alerts({ help = false }: { help?: boolean }) {
         )}
 
         {help && (
-          <Link href={state === "needs-install" ? "/za#install" : "/za#izvestiya"} className="mt-1 inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-accent">
-            {state === "needs-install" ? "Как да го добавя" : state === "on" ? "Настройки на известията" : "Как работят"}
+          <Link
+            href={state === "needs-install" ? `${SETTINGS}#install` : `${SETTINGS}#izvestiya`}
+            className="mt-1 inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-accent"
+          >
+            {state === "needs-install" ? t("Как да го добавя", "How to add it") : state === "on" ? t("Настройки на известията", "Alert settings") : t("Как работят", "How they work")}
             <ChevronRight size={16} strokeWidth={2} aria-hidden />
           </Link>
         )}
       </div>
-    </section>
+    </Frame>
+  );
+}
+
+/** On the home screen the card stands alone; in Settings it is a group with a section label. */
+function Frame({ help, title, children }: { help: boolean; title: string; children: React.ReactNode }) {
+  if (help) return <section aria-label={title}>{children}</section>;
+  return (
+    <SettingsGroup id="izvestiya" title={title}>
+      {children}
+    </SettingsGroup>
   );
 }

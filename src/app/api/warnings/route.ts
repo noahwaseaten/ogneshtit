@@ -1,12 +1,13 @@
+import { textFor } from "@/i18n/server";
 import { connection } from "next/server";
 import { getWarnings } from "@/lib/warnings";
 
-export async function GET() {
+export async function GET(req: Request) {
   await connection();
   try {
     return Response.json(await getWarnings());
   } catch (e) {
     console.error("warnings failed", e);
-    return Response.json({ error: "Предупрежденията на НИМХ не са достъпни." }, { status: 502 });
+    return Response.json({ error: textFor(req)("Предупрежденията на НИМХ не са достъпни.", "The weather warnings aren't available.") }, { status: 502 });
   }
 }

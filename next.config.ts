@@ -5,9 +5,11 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // The share images read their fonts from disk at request time; make sure they ship with the functions.
   outputFileTracingIncludes: {
-    "/s/og": ["./assets/fonts/**"],
-    "/opengraph-image": ["./assets/fonts/**"],
+    "/[lang]/s/og": ["./assets/fonts/**"],
+    "/[lang]/opengraph-image": ["./assets/fonts/**"],
   },
+  // "За ОгнеЩит" became Settings.
+  redirects: async () => [{ source: "/za", destination: "/nastroiki", permanent: true }],
   headers: async () => [
     {
       source: "/:path*",

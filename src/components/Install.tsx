@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Download } from "lucide-react";
+import { useI18n } from "@/i18n/client";
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
@@ -48,9 +49,10 @@ export function useInstall() {
 
 export function InstallButton({ compact }: { compact?: boolean }) {
   const { canPrompt, install } = useInstall();
+  const { t } = useI18n();
   if (!canPrompt) return null;
   return compact ? (
-    <button onClick={install} aria-label="Инсталирай приложението" className="pressable grid size-11 place-items-center rounded-full text-accent hover:bg-line/60">
+    <button onClick={install} aria-label={t("Инсталирай приложението", "Install the app")} className="pressable grid size-11 place-items-center rounded-full text-accent hover:bg-line/60">
       <Download size={21} strokeWidth={2} aria-hidden />
     </button>
   ) : (
@@ -59,7 +61,7 @@ export function InstallButton({ compact }: { compact?: boolean }) {
       className="pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-[16px] font-semibold text-accent-content"
     >
       <Download size={20} strokeWidth={2} aria-hidden />
-      Инсталирай
+      {t("Инсталирай", "Install")}
     </button>
   );
 }

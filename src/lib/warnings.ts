@@ -12,6 +12,8 @@ export type Warning = {
   areas: string[];
   onset: string;
   expires: string;
+  /** The same warning in English, when MeteoAlarm has it. */
+  en?: { event: string; headline: string; description: string };
 };
 
 export type WarningsResponse = { warnings: Warning[]; updated: string };
@@ -42,6 +44,7 @@ export async function getWarnings(): Promise<WarningsResponse> {
   for (const w of feed.warnings ?? []) {
     const infos = w.alert?.info ?? [];
     const info = infos.find((i) => (i.language ?? "").toLowerCase().startsWith("bg")) ?? infos[0];
+    const en = infos.find((i) => (i.language ?? "").toLowerCase().startsWith("en"));
     if (!info) continue;
     const expires = info.expires ?? "";
     if (expires && Date.parse(expires) < now) continue;
@@ -56,6 +59,7 @@ export async function getWarnings(): Promise<WarningsResponse> {
       areas: (info.area ?? []).map((a) => a.areaDesc ?? "").filter(Boolean),
       onset: info.onset ?? info.effective ?? "",
       expires,
+      en: en ? { event: en.event ?? "", headline: en.headline ?? "", description: en.description ?? "" } : undefined,
     });
   }
   return { warnings: out, updated: new Date().toISOString() };

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { Minus, Plus, Maximize, LocateFixed } from "lucide-react";
 import { MAP_H, MAP_W, OBLASTS, UNITS_PER_KM, project } from "@/data/oblasts";
 import { PLACES } from "@/data/places";
+import { useI18n } from "@/i18n/client";
+import { placeName } from "@/i18n/names";
 
 // A plain SVG map of Bulgaria's 28 oblasts. No tiles and no map library: it draws instantly and
 // works offline. With `zoomable` it pans and zooms by drag, pinch, wheel, double tap and buttons.
@@ -62,6 +64,7 @@ export function BulgariaMap({
   /** Size the box with CSS (e.g. an aspect ratio); the map fits inside it. */
   className?: string;
 }) {
+  const { t, lang } = useI18n();
   const box = useRef<HTMLDivElement>(null);
   const svg = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: 600, h: 600 * (MAP_H / MAP_W) });
@@ -412,8 +415,8 @@ export function BulgariaMap({
   };
 
   const towns = useMemo(
-    () => PLACES.filter((p) => zoom >= 2.2 || MAJOR.has(p.name)).map((p) => ({ name: p.name, xy: project(p.lat, p.lon) })),
-    [zoom],
+    () => PLACES.filter((p) => zoom >= 2.2 || MAJOR.has(p.name)).map((p) => ({ name: placeName(p.name, lang), xy: project(p.lat, p.lon) })),
+    [zoom, lang],
   );
 
   const meXY = me ? project(me.lat, me.lon) : null;
@@ -540,7 +543,7 @@ export function BulgariaMap({
               key={c.pts[0].id}
               role="button"
               tabIndex={0}
-              aria-label={n === 1 ? c.pts[0].label : `${n} огнища едно до друго`}
+              aria-label={n === 1 ? c.pts[0].label : t(`${n} огнища едно до друго`, `${n} fires close together`)}
               className="cursor-pointer outline-none"
               onClick={() => tap(() => openCluster(c))}
               onKeyDown={onKey(() => openCluster(c))}
@@ -562,7 +565,7 @@ export function BulgariaMap({
           {zoom > 1.05 && (
             <button
               onClick={() => animateTo(fullVB(r))}
-              aria-label="Цяла България"
+              aria-label={t("Цяла България", "All of Bulgaria")}
               className="pressable grid size-11 place-items-center rounded-full bg-card text-content shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
             >
               <Maximize size={18} strokeWidth={2} aria-hidden />
@@ -570,17 +573,17 @@ export function BulgariaMap({
           )}
           {/* Phones zoom with fingers, as in map apps; buttons only where there is a mouse. */}
           <div className="hidden flex-col overflow-hidden rounded-xl bg-card shadow-[0_1px_4px_rgb(0_0_0/0.25)] [@media(pointer:fine)]:flex">
-            <button onClick={() => animateTo(zoomBy(2))} disabled={zoom >= MAX_ZOOM} aria-label="Приближи" className="grid size-10 place-items-center hover:bg-line/60 disabled:opacity-35">
+            <button onClick={() => animateTo(zoomBy(2))} disabled={zoom >= MAX_ZOOM} aria-label={t("Приближи", "Zoom in")} className="grid size-10 place-items-center hover:bg-line/60 disabled:opacity-35">
               <Plus size={18} strokeWidth={2} aria-hidden />
             </button>
-            <button onClick={() => animateTo(zoomBy(0.5))} disabled={zoom <= 1.01} aria-label="Отдалечи" className="grid size-10 place-items-center border-t border-line hover:bg-line/60 disabled:opacity-35">
+            <button onClick={() => animateTo(zoomBy(0.5))} disabled={zoom <= 1.01} aria-label={t("Отдалечи", "Zoom out")} className="grid size-10 place-items-center border-t border-line hover:bg-line/60 disabled:opacity-35">
               <Minus size={18} strokeWidth={2} aria-hidden />
             </button>
           </div>
           {me && (
             <button
               onClick={locate}
-              aria-label="Покажи моето място"
+              aria-label={t("Покажи моето място", "Show my location")}
               className="pressable grid size-12 place-items-center rounded-full bg-card text-[#1f6fd1] shadow-[0_1px_4px_rgb(0_0_0/0.25)]"
             >
               <LocateFixed size={22} strokeWidth={2} aria-hidden />

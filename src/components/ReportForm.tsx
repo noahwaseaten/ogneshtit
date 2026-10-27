@@ -2,10 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check } from "lucide-react";
-import { getPosition, sofiaTime, useLocation } from "@/lib/client";
+import { getPosition, useLocation } from "@/lib/client";
+import { useI18n } from "@/i18n/client";
+import { formatters } from "@/i18n/format";
+import { placeName } from "@/i18n/names";
 import { nearestRdg, telOf, useRdgs } from "./rdg";
 
-const KINDS = ["Сеч без марки или позволително", "Извозване на дървесина", "Бракониерство", "Палене на огън", "Отпадъци в гората", "Друго"];
+// What was seen. The report itself is always written in Bulgarian, because it goes to a Bulgarian office.
+const KINDS: [string, string][] = [
+  ["Сеч без марки или позволително", "Cutting without marks or a permit"],
+  ["Извозване на дървесина", "Timber being hauled away"],
+  ["Бракониерство", "Poaching"],
+  ["Палене на огън", "Someone lighting a fire"],
+  ["Отпадъци в гората", "Rubbish in the forest"],
+  ["Друго", "Something else"],
+];
+const bgTime = formatters("bg").time;
 
 type Photo = { file: File; url: string };
 
@@ -14,7 +26,9 @@ type Photo = { file: File; url: string };
  * Nothing is sent or stored by ОгнеЩит itself.
  */
 export function ReportForm() {
-  const [kind, setKind] = useState(KINDS[0]);
+  const [kindIx, setKindIx] = useState(0);
+  const kind = KINDS[kindIx][0];
+  const { t, tp, lang } = useI18n();
   const [pos, setPos] = useState<{ lat: number; lon: number; acc: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locErr, setLocErr] = useState<string | null>(null);
@@ -67,7 +81,7 @@ export function ReportForm() {
   const locate = () => {
     setLocating(true);
     setLocErr(null);
-    getPosition(true)
+    getPosition(true, lang)
       .then((p) => setPos({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }))
       .catch((e: Error) => setLocErr(e.message))
       .finally(() => setLocating(false));
@@ -76,7 +90,7 @@ export function ReportForm() {
   // Composed when sent, so "Кога" is the moment of sending.
   const compose = () => [
     `Сигнал: ${kind}`,
-    `Кога: ${sofiaTime(new Date().toISOString(), { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
+    `Кога: ${bgTime(new Date().toISOString(), { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
     pos && `Координати: ${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)} (точност около ${Math.round(pos.acc)} м)`,
     pos && `Карта: https://www.google.com/maps/search/?api=1&query=${pos.lat.toFixed(5)},${pos.lon.toFixed(5)}`,
     place.trim() && `Място: ${place.trim()}`,
@@ -84,7 +98,7 @@ export function ReportForm() {
     desc.trim() && `Описание: ${desc.trim()}`,
     photos.length > 0 && `Снимки: ${photos.length}`,
     "",
-    "Подготвено с ОгнеЩит",
+    lang === "en" ? "Подготвено с ОгнеЩит. Подателят пише на английски." : "Подготвено с ОгнеЩит",
   ]
     .filter((l) => l !== false && l !== null && l !== undefined)
     .join("\n");
@@ -118,43 +132,50 @@ export function ReportForm() {
     <section aria-labelledby="report-title" className="rounded-[20px] bg-card p-5 lg:p-6">
       <div>
         <h2 id="report-title" className="font-display text-[22px] font-semibold leading-tight">
-          Незаконна сеч или бракониерство?
+          {t("Незаконна сеч или бракониерство?", "Illegal logging or poaching?")}
         </h2>
       </div>
       <p className="pt-2 text-[16px] leading-snug">
-        Подгответе сигнала тук и го изпратете до регионалната дирекция по горите с имейл, съобщение или обаждане.
-        ОгнеЩит не изпраща и не пази нищо сам.
+        {t(
+          "Подгответе сигнала тук и го изпратете до регионалната дирекция по горите с имейл, съобщение или обаждане. ОгнеЩит не изпраща и не пази нищо сам.",
+          "Put the report together here and send it to the regional forest directorate by email, message or phone. Fire Shield doesn't send or keep anything itself.",
+        )}
       </p>
-      <p className="pt-2 text-[14px] font-medium text-ember">Ако сечта или пожарът е в момента, звъннете на 112.</p>
+      {lang === "en" && (
+        <p className="pt-2 text-[14px] leading-snug text-muted">
+          The directorates work in Bulgarian, so the report is written in Bulgarian for you. Your own description can stay in English.
+        </p>
+      )}
+      <p className="pt-2 text-[14px] font-medium text-ember">{t("Ако сечта или пожарът е в момента, звъннете на 112.", "If the cutting or a fire is happening now, call 112.")}</p>
 
       <fieldset className="mt-5">
-        <legend className="text-[15px] font-semibold">Какво видяхте?</legend>
+        <legend className="text-[15px] font-semibold">{t("Какво видяхте?", "What did you see?")}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
-          {KINDS.map((k) => (
+          {KINDS.map((k, i) => (
             <label
-              key={k}
+              key={k[0]}
               className={`pressable inline-flex min-h-11 cursor-pointer items-center rounded-full border px-3.5 text-[15px] font-medium transition-colors duration-150 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
-                kind === k ? "border-content bg-content text-surface" : "border-line hover:bg-line/50"
+                kindIx === i ? "border-content bg-content text-surface" : "border-line hover:bg-line/50"
               }`}
             >
-              <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => setKind(k)} className="sr-only" />
-              {k}
+              <input type="radio" name="kind" value={k[0]} checked={kindIx === i} onChange={() => setKindIx(i)} className="sr-only" />
+              {tp(k)}
             </label>
           ))}
         </div>
       </fieldset>
 
       <div className="mt-5">
-        <p className="text-[15px] font-semibold">Къде?</p>
+        <p className="text-[15px] font-semibold">{t("Къде?", "Where?")}</p>
         {pos ? (
           <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-surface p-3 pl-4">
             <div className="min-w-0">
               <p className="font-display text-[18px] font-semibold tabular-nums">
                 {pos.lat.toFixed(5)}, {pos.lon.toFixed(5)}
               </p>
-              <p className="text-[13px] text-muted tabular-nums">Точност около {Math.round(pos.acc)} м</p>
+              <p className="text-[13px] text-muted tabular-nums">{t(`Точност около ${Math.round(pos.acc)} м`, `Accurate to about ${Math.round(pos.acc)} m`)}</p>
             </div>
-            <button onClick={() => setPos(null)} className="pressable grid size-11 shrink-0 place-items-center rounded-full hover:bg-line" aria-label="Махни координатите">
+            <button onClick={() => setPos(null)} className="pressable grid size-11 shrink-0 place-items-center rounded-full hover:bg-line" aria-label={t("Махни координатите", "Remove the coordinates")}>
               <X size={18} strokeWidth={2} aria-hidden />
             </button>
           </div>
@@ -165,33 +186,33 @@ export function ReportForm() {
             className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-line px-4 text-[16px] font-semibold disabled:opacity-60"
           >
             <LocateFixed size={20} strokeWidth={2} aria-hidden />
-            {locating ? "Търсим сигнал от GPS…" : "Добави точните ми координати"}
+            {locating ? t("Търсим сигнал от GPS…", "Finding a GPS signal…") : t("Добави точните ми координати", "Add my exact coordinates")}
           </button>
         )}
-        {locErr && <p className="pt-2 text-[14px] leading-snug text-ember">{locErr} Може и да опишете мястото по-долу.</p>}
+        {locErr && <p className="pt-2 text-[14px] leading-snug text-ember">{locErr} {t("Може и да опишете мястото по-долу.", "You can also describe the place below.")}</p>}
         <label className="mt-2 block">
-          <span className="sr-only">Описание на мястото</span>
-          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Село, път или местност" className={`${field} min-h-12`} />
+          <span className="sr-only">{t("Описание на мястото", "Describe the place")}</span>
+          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder={t("Село, път или местност", "Village, road or area")} className={`${field} min-h-12`} />
         </label>
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="text-[15px] font-semibold">Номер на превозно средство</span>
+          <span className="text-[15px] font-semibold">{t("Номер на превозно средство", "Vehicle number plate")}</span>
           <input
             value={plate}
             onChange={(e) => setPlate(e.target.value)}
-            placeholder="Ако има"
+            placeholder={t("Ако има", "If there is one")}
             autoCapitalize="characters"
             autoComplete="off"
             className={`${field} mt-2 min-h-12 uppercase placeholder:normal-case`}
           />
         </label>
         <div>
-          <span className="text-[15px] font-semibold">Снимки</span>
+          <span className="text-[15px] font-semibold">{t("Снимки", "Photos")}</span>
           <label className="pressable mt-2 flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-line px-4 text-[16px] font-semibold has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent">
             <Camera size={20} strokeWidth={2} aria-hidden />
-            Добави снимки
+            {t("Добави снимки", "Add photos")}
             <input
               type="file"
               accept="image/*"
@@ -211,14 +232,14 @@ export function ReportForm() {
           {photos.map((p, i) => (
             <li key={p.url} className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}
-              <img src={p.url} alt={`Снимка ${i + 1}`} className="aspect-square w-full rounded-xl object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+              <img src={p.url} alt={t(`Снимка ${i + 1}`, `Photo ${i + 1}`)} className="aspect-square w-full rounded-xl object-cover outline outline-1 -outline-offset-1 outline-black/10" />
               <button
                 onClick={() => {
                   URL.revokeObjectURL(p.url);
                   setPhotos((ps) => ps.filter((x) => x !== p));
                 }}
                 className="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-black/60 text-white after:absolute after:-inset-1.5"
-                aria-label={`Махни снимка ${i + 1}`}
+                aria-label={t(`Махни снимка ${i + 1}`, `Remove photo ${i + 1}`)}
               >
                 <X size={16} strokeWidth={2.25} aria-hidden />
               </button>
@@ -228,30 +249,30 @@ export function ReportForm() {
       )}
 
       <label className="mt-5 block">
-        <span className="text-[15px] font-semibold">Какво се случва?</span>
+        <span className="text-[15px] font-semibold">{t("Какво се случва?", "What's happening?")}</span>
         <textarea
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           rows={3}
-          placeholder="Например: режат дъбове без боядисани марки, около 10 дървета, има трактор"
+          placeholder={t("Например: режат дъбове без боядисани марки, около 10 дървета, има трактор", "For example: they're cutting oaks with no painted marks, about 10 trees, there's a tractor")}
           className={`${field} mt-2 py-3 leading-snug`}
         />
       </label>
 
       <div className="mt-6 rounded-2xl bg-surface p-4">
-        <p className="text-[13px] font-medium text-muted">Изпращате до</p>
+        <p className="text-[13px] font-medium text-muted">{t("Изпращате до", "Sending to")}</p>
         {rdgs ? (
           <label className="mt-1 block">
-            <span className="sr-only">Регионална дирекция по горите</span>
+            <span className="sr-only">{t("Регионална дирекция по горите", "Regional forest directorate")}</span>
             <select
               value={rdg?.id ?? ""}
               onChange={(e) => setRdgId(Number(e.target.value))}
               className="min-h-11 w-full rounded-xl bg-transparent text-[17px] font-semibold outline-none"
             >
-              {!rdg && <option value="">Изберете регионална дирекция</option>}
+              {!rdg && <option value="">{t("Изберете регионална дирекция", "Choose a regional directorate")}</option>}
               {rdgs.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name}
+                  {placeName(r.name, lang)}
                 </option>
               ))}
             </select>
@@ -261,8 +282,12 @@ export function ReportForm() {
         )}
         {rdg && (
           <p className="pt-1 text-[13px] text-muted">
-            {auto?.id === rdg.id ? (pos ? "Най-близката до мястото на сигнала. " : `Най-близката до ${loc.source === "gps" ? "вас" : loc.label}. `) : ""}
-            {rdg.phone && <>Телефон {rdg.phone} в работно време. </>}
+            {auto?.id === rdg.id
+              ? pos
+                ? t("Най-близката до мястото на сигнала. ", "The closest to the place you're reporting. ")
+                : t(`Най-близката до ${loc.source === "gps" ? "вас" : loc.label}. `, `The closest to ${loc.source === "gps" ? "you" : placeName(loc.label, "en")}. `)
+              : ""}
+            {rdg.phone && <>{t(`Телефон ${rdg.phone} в работно време. `, `Phone ${rdg.phone} in office hours. `)}</>}
             {rdg.email}
           </p>
         )}
@@ -274,7 +299,7 @@ export function ReportForm() {
             className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-[16px] font-semibold text-accent-content disabled:opacity-50"
           >
             {copied ? <Check size={18} strokeWidth={2.25} aria-hidden /> : <Send size={18} strokeWidth={2} aria-hidden />}
-            {copied ? "Текстът е копиран" : canShareFiles ? "Изпрати със снимките" : "Изпрати"}
+            {copied ? t("Текстът е копиран", "Text copied") : canShareFiles ? t("Изпрати със снимките", "Send with the photos") : t("Изпрати", "Send")}
           </button>
           {rdg?.email && (
             <button
@@ -285,7 +310,7 @@ export function ReportForm() {
               className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-line px-4 text-[16px] font-semibold disabled:opacity-50"
             >
               <Mail size={18} strokeWidth={2} aria-hidden />
-              Имейл до {rdg.name}
+              {t(`Имейл до ${rdg.name}`, `Email ${placeName(rdg.name, "en")}`)}
             </button>
           )}
           {rdg?.phone && (
@@ -294,7 +319,7 @@ export function ReportForm() {
               className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-line px-4 text-[16px] font-semibold"
             >
               <Phone size={18} strokeWidth={2} aria-hidden />
-              Обади се в {rdg.name}
+              {t(`Обади се в ${rdg.name}`, `Call ${placeName(rdg.name, "en")}`)}
             </a>
           )}
           <a
@@ -304,13 +329,15 @@ export function ReportForm() {
             onClick={() => ready && copy()}
             className="pressable flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[15px] font-medium text-accent"
           >
-            Подай в „Защити гората“
+            {t("Подай в „Защити гората“", "Report in Zashtiti Gorata")}
             <ExternalLink size={16} strokeWidth={2} aria-hidden />
           </a>
         </div>
-        {!ready && <p className="pt-2 text-[13px] text-muted">Добавете координати или опишете мястото, за да изпратите.</p>}
+        {!ready && <p className="pt-2 text-[13px] text-muted">{t("Добавете координати или опишете мястото, за да изпратите.", "Add coordinates or describe the place to send it.")}</p>}
         {photos.length > 0 && !canShareFiles && (
-          <p className="pt-2 text-[13px] text-muted">При имейл прикачете снимките ръчно: браузърът не може да ги добави сам.</p>
+          <p className="pt-2 text-[13px] text-muted">
+            {t("При имейл прикачете снимките ръчно: браузърът не може да ги добави сам.", "For email, attach the photos yourself: the browser can't add them for you.")}
+          </p>
         )}
       </div>
     </section>
