@@ -1,0 +1,21 @@
+name: Грешка
+description: Нещо не работи или показва грешни данни
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Какво се случи?
+      description: Какво очаквахте и какво видяхте. Ако може, добавете снимка на екрана.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Къде?
+      description: Страница и място (например „Днес“, Пловдив)
+  - type: input
+    id: device
+    attributes:
+      label: Устройство и браузър
+      placeholder: iPhone 13, Safari

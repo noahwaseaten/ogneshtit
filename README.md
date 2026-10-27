@@ -1,34 +1,75 @@
-# Гората днес
+<p align="center">
+  <img src="https://ogneshtit.noahwaseaten.com/app-icon/192" width="88" height="88" alt="" />
+</p>
 
-Mobile-first web app (PWA) about forest protection in Bulgaria, built for a school project on „Защита на гората".
+<h1 align="center">ОгнеЩит</h1>
 
-- **Днес** — today's forest fire danger for your location (Canadian FWI system, the index EFFIS uses across the EU), a 5-day outlook, satellite hotspots from NASA FIRMS within 50 km, and burnt forest area per year (ИАГ data, 2010–2024).
-- **Карта** — tree cover loss (Hansen/UMD via Global Forest Watch) with Natura 2000 sites (EEA) on top.
-- **Помогни** — one tap to 112 with your GPS coordinates, how to check a timber truck in the ИАГ register, and reporting illegal logging via „Защити гората".
+<p align="center">
+  Опасност от горски пожар днес, огнища от спътник, пожарите по области,<br />
+  проверка на камиони с дървесина и сигнали за незаконна сеч. За всеки в България.
+</p>
 
-## How the fire danger is computed
+<p align="center">
+  <a href="https://ogneshtit.noahwaseaten.com"><strong>ogneshtit.noahwaseaten.com</strong></a>
+  ·
+  <a href="https://github.com/noahwaseaten/ogneshtit/actions/workflows/ci.yml"><img src="https://github.com/noahwaseaten/ogneshtit/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  ·
+  <a href="LICENSE">MIT</a>
+</p>
 
-`src/lib/fwi.ts` implements Van Wagner (1987). It runs 45 days of noon weather from Open-Meteo through the
-moisture codes so they settle, then classifies today's FWI with EFFIS's six classes. `npm run test:fwi`
-checks it against Van Wagner & Pickett's published test values. EFFIS's own value for the point is shown as a cross-check when available.
+---
 
-## Data sources (all free)
+## Какво прави
 
-| Data | Source | Key |
+| Екран | Какво има |
+| --- | --- |
+| **Днес** | Опасност от пожар за мястото ви по канадския индекс FWI (същите 6 нива като EFFIS), прогноза за 5 дни, качество на въздуха, предупреждения на НИМХ и огнищата, засечени от спътниците на NASA през последните 48 часа, на карта и в списък. |
+| **Пожари** | Горските пожари по области за всяка година от 2007 г. насам по данни на ИАГ: брой, изгоряла площ, причини, вид гора, собственост и сравнение по години. |
+| **Помогни** | 112 с точните ви координати, проверка на превозния билет на камион с дървесина директно в регистъра на ИАГ и подготвен сигнал за незаконна сеч до най-близката регионална дирекция по горите. |
+| **Още** | Светла, тъмна или автоматична тема, източници на данните и какво (не) пазим. |
+
+Работи на всеки телефон като уеб приложение (може да се добави на началния екран) и без интернет показва последните данни и екрана с 112.
+
+## Данни
+
+| Данни | Източник | Ключ |
 | --- | --- | --- |
-| Weather | Open-Meteo | none |
-| Fire danger cross-check | EFFIS WMS (`ecmwf007.fwi`) | none |
-| Hotspots | NASA FIRMS (VIIRS) | `FIRMS_MAP_KEY` (falls back to open 24 h files) |
-| Burnt area history | ИАГ via WWF Bulgaria analysis (2025) | — |
-| Tree cover loss | Hansen/UMD, GFW tiles | none |
-| Natura 2000 | EEA ArcGIS FeatureServer | none |
-| Basemap | OpenFreeMap | none |
+| Време, въздух, търсене на места | [Open-Meteo](https://open-meteo.com) | не |
+| Огнища от спътник | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov), VIIRS | `FIRMS_MAP_KEY` (без него: отворените 24-часови файлове) |
+| Пожари по области, превозни билети, РДГ | [Изпълнителна агенция по горите](https://www.iag.bg) | не |
+| Предупреждения за времето | НИМХ чрез [MeteoAlarm](https://meteoalarm.org) | не |
+| Нива на опасност | [EFFIS](https://forest-fire.emergency.copernicus.eu) | не |
+| Граници на областите | [Natural Earth](https://www.naturalearthdata.com) | не |
 
-## Run
+## Как се смята опасността
+
+`src/lib/fwi.ts` следва Van Wagner (1987). Подаваме му времето по обяд за последните 45 дни от Open-Meteo, за да се установят влажностите на горивата, и класираме днешния FWI по шестте нива на EFFIS. `npm run test:fwi` проверява кода срещу публикуваните контролни стойности на Van Wagner и Pickett.
+
+---
+
+## English
+
+ОгнеЩит ("fire shield") is a mobile-first web app about forest fires in Bulgaria, built for a school project on forest protection. It computes today's Canadian Fire Weather Index for any place in Bulgaria, shows NASA FIRMS hotspots, charts official forest fire statistics per oblast from the Executive Forest Agency (ИАГ), checks timber transport tickets against ИАГ's public register, and prepares illegal logging reports for the nearest regional forest directorate. Nothing personal is stored on the server.
+
+### Run it
 
 ```bash
 npm install
-FIRMS_MAP_KEY=... npm run dev
+cp .env.example .env.local   # optional: add a free NASA FIRMS map key
+npm run dev
 ```
 
-Stack: Next.js 16 (App Router, Cache Components), Tailwind 4, MapLibre GL 6, Vaul sheets, Onest (Cyrillic) for display type.
+| Script | What it does |
+| --- | --- |
+| `npm run dev` / `build` / `start` | Next.js |
+| `npm run typecheck` / `lint` | TypeScript and ESLint |
+| `npm run test:fwi` | FWI against published reference values |
+| `npm run map` | Regenerates `src/data/oblasts.ts` from `scripts/data/bg-oblasts.geojson` |
+
+Stack: Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4, Vaul sheets, Lucide icons, Onest for display type. Deployed on Vercel; every push to `main` goes to production.
+
+### Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
+
+ОгнеЩит is not an official source. In an emergency, call 112.
