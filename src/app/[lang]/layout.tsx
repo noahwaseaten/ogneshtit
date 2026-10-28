@@ -6,6 +6,7 @@ import { Sidebar, TabBar, TopBar } from "@/components/Shell";
 import { RegisterSW } from "@/components/RegisterSW";
 import { LangProvider } from "@/i18n/client";
 import { APP_NAME, LANGS, isLang, pick } from "@/i18n/lang";
+import { Analytics } from "@vercel/analytics/next";
 
 const SITE = "https://ogneshtit.noahwaseaten.com";
 
@@ -69,6 +70,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
           <TabBar />
           <RegisterSW />
         </LangProvider>
+        <Analytics />
       </body>
     </html>
   );
