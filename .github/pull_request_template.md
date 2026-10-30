@@ -4,7 +4,7 @@
 
 ## Как е проверено
 
-- [ ] `npm run typecheck`, `npm run lint`, `npm run test:fwi`, `npm run build`
+- [ ] `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` (всички приложения)
 - [ ] Прегледано на телефон (около 390 px) и на компютър (1280 px и повече)
 - [ ] Светла и тъмна тема
 - [ ] Текстът е на прост български, без тирета (—) и без жаргон

@@ -2,6 +2,17 @@ name: Идея
 description: Предложение за нещо ново или по-добро
 labels: [enhancement]
 body:
+  - type: dropdown
+    id: app
+    attributes:
+      label: Кое приложение?
+      options:
+        - ВъздухоЩит (въздух)
+        - ОгнеЩит (пожари)
+        - ВодоЩит (наводнения)
+        - Щит (началната страница)
+    validations:
+      required: true
   - type: textarea
     id: idea
     attributes:

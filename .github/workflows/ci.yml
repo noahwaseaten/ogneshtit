@@ -16,7 +16,7 @@ jobs:
   check:
     name: check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,10 +24,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx next typegen
+      # Route types for every app, then types, lint and tests for every workspace (packages/core and apps/*).
+      - run: npm run typegen
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm run test:fwi
-      - run: npm run test:fires
-      - run: npm run test:passes
+      - run: npm test
       - run: npm run build

@@ -1,0 +1,79 @@
+@import "tailwindcss";
+@import "../../../../packages/core/src/styles/base.css";
+@source "../../../../packages/core/src";
+
+/*
+  ВъздухоЩит tokens: a clear winter sky. Teal for the app itself, so the air scale keeps its own colours: the official
+  EEA index colours (cyan, green, yellow, red, crimson, purple), the ones people see on EEA and МОСВ maps.
+*/
+:root {
+  --surface: #edf4f5; /* winter sky haze */
+  --card: #ffffff;
+  --raised: #ffffff;
+  --content: #0f1d20;
+  --muted: #4d6064;
+  --line: oklch(0 0 0 / 0.08);
+  --accent: #0d5e6b; /* deep clear-sky teal */
+  --accent-content: #ffffff;
+  --ember: #c7361f; /* errors only */
+  --mark: #9fe3ec; /* the gusts in the emblem */
+  --shadow: none;
+  --lift: 0 1px 3px oklch(0 0 0 / 0.12);
+  --tonal: color-mix(in oklab, var(--accent) 15%, var(--card));
+  --land: #e1eaec;
+  --land-line: oklch(0 0 0 / 0.14);
+
+  /* European Air Quality Index colours (air-types.ts). Text colour per band chosen for ≥4.5:1. */
+  --b-good: #50f0e6;
+  --b-fair: #50ccaa;
+  --b-moderate: #f0e641;
+  --b-poor: #ff5050;
+  --b-verypoor: #960032;
+  --b-extreme: #7d2181;
+  --d-low: #1f8a7a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0b1416;
+    --card: #142023;
+    --raised: #1a2a2e;
+    --content: #e2eef0;
+    --muted: #93a8ac;
+    --line: oklch(1 0 0 / 0.1);
+    --accent: #7fd6e1;
+    --accent-content: #0b1416;
+    --ember: #ff7a5c;
+    --mark: #0d5e6b;
+    --land: #1a282b;
+    --land-line: oklch(1 0 0 / 0.16);
+    --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #0b1416;
+  --card: #142023;
+  --raised: #1a2a2e;
+  --content: #e2eef0;
+  --muted: #93a8ac;
+  --line: oklch(1 0 0 / 0.1);
+  --accent: #7fd6e1;
+  --accent-content: #0b1416;
+  --ember: #ff7a5c;
+  --mark: #0d5e6b;
+  --land: #1a282b;
+  --land-line: oklch(1 0 0 / 0.16);
+  --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+  color-scheme: dark;
+}
+
+/* The hour ribbon scrolls sideways with snap points, like the hourly forecast in Apple Weather. */
+.hours {
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 16px;
+}
+.hours > * {
+  scroll-snap-align: start;
+}

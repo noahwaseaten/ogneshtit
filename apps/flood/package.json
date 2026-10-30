@@ -1,0 +1,40 @@
+{
+  "name": "@shtit/flood",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ВодоЩит: опасност от наводнение днес, реките по данни на GloFAS, дъжд и топене на сняг в България.",
+  "license": "MIT",
+  "homepage": "https://flood.noahwaseaten.com",
+  "scripts": {
+    "dev": "next dev -p 3002",
+    "build": "next build",
+    "start": "next start -p 3002",
+    "typegen": "next typegen",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint",
+    "test": "tsx scripts/test-flood.ts",
+    "gauges": "tsx scripts/gauges.ts",
+    "rivers": "node scripts/rivers.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/onest": "5.3.1",
+    "@shtit/core": "*",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/blob": "2.8.2",
+    "lucide-react": "1.62.0",
+    "next": "16.4.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "vaul": "1.1.2",
+    "web-push": "3.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import "../../../../packages/core/src/styles/base.css";
+@source "../../../../packages/core/src";
+
+/*
+  Tokens drawn from the subject: fir needles, ash, ember.
+  Ember is reserved for danger; the accent (fir) is for primary actions only.
+*/
+:root {
+  --surface: #f3f5f1; /* pale lichen */
+  --card: #ffffff;
+  --raised: #ffffff;
+  --content: #16201a; /* pine near-black */
+  --muted: #55625a;
+  --line: oklch(0 0 0 / 0.08);
+  --accent: #1f5b3e; /* fir */
+  --accent-content: #ffffff;
+  --ember: #c7361f;
+  --mark: #c7361f; /* centre of the emblem */
+  /* Satellite fires by heat: weak, medium, strong, very strong. */
+  --heat-1: #e9b52c;
+  --heat-2: #ec7d1b;
+  --heat-3: #d63a17;
+  --heat-4: #8e1a10;
+  /* Surfaces are separated by tone, not by shadows. Only things that float (the selected
+     segment, sheets) get --lift. */
+  --shadow: none;
+  --lift: 0 1px 3px oklch(0 0 0 / 0.12);
+  /* Tonal fill for selected segments, chips and the nav indicator (Material 3 "secondary container"). */
+  --tonal: color-mix(in oklab, var(--accent) 20%, var(--card));
+  --land: #e4e9e1;
+  --land-line: oklch(0 0 0 / 0.14);
+
+  /* Danger classes (EFFIS FWI scale). Text colour chosen per class for ≥4.5:1. */
+  --d-low: #2f7d4a;
+  --d-moderate: #e3b021;
+  --d-high: #e3741b;
+  --d-veryhigh: #c7361f;
+  --d-extreme: #8a1a12;
+  --d-veryextreme: #4b1036;
+
+  color-scheme: light;
+}
+
+/* Dark: follows the device unless the person picked a theme (data-theme set in layout.tsx). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0e1411;
+    --card: #18201b;
+    --raised: #1f2822;
+    --content: #e6ece4;
+    --muted: #9aa79e;
+    --line: oklch(1 0 0 / 0.1);
+    --accent: #7fcf9e;
+    --accent-content: #0e1411;
+    --ember: #ff7a5c;
+    --mark: #ff7a5c;
+    --heat-1: #f3c44a;
+    --heat-2: #f7913a;
+    --heat-3: #ff5f3a;
+    --heat-4: #ff3d6e;
+    --land: #223029;
+    --land-line: oklch(1 0 0 / 0.16);
+    --shadow: none;
+    --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --heat-1: #f3c44a;
+  --heat-2: #f7913a;
+  --heat-3: #ff5f3a;
+  --heat-4: #ff3d6e;
+  --surface: #0e1411;
+  --card: #18201b;
+  --raised: #1f2822;
+  --content: #e6ece4;
+  --muted: #9aa79e;
+  --line: oklch(1 0 0 / 0.1);
+  --accent: #7fcf9e;
+  --accent-content: #0e1411;
+  --ember: #ff7a5c;
+  --mark: #ff7a5c;
+  --land: #223029;
+  --land-line: oklch(1 0 0 / 0.16);
+  --shadow: none;
+  --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+  color-scheme: dark;
+}
+
+/* Satellite fire marks (FireMark.tsx). Transform and opacity only. */
+.fire-flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  animation: fire-flicker 1.7s ease-in-out infinite;
+}
+@keyframes fire-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  22% {
+    transform: scale(0.96, 1.06) skewX(-3deg);
+  }
+  48% {
+    transform: scale(1.03, 0.96) skewX(1deg);
+  }
+  74% {
+    transform: scale(0.98, 1.04) skewX(3deg);
+  }
+}
+.fire-pop {
+  transform-box: fill-box;
+  transform-origin: 50% 70%;
+  animation: fire-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes fire-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fire-flicker,
+  .fire-pop {
+    animation: none;
+  }
+}

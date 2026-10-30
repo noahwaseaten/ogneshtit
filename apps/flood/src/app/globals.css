@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import "../../../../packages/core/src/styles/base.css";
+@source "../../../../packages/core/src";
+
+/*
+  ВодоЩит tokens: frost, river ice and deep winter water. The same structure as ОгнеЩит, in winter colours.
+  The danger colours stay the familiar warning ramp (yellow, orange, red, purple) that GloFAS and MeteoAlarm use;
+  only "low" is water blue.
+*/
+:root {
+  --surface: #eef3f7; /* frost */
+  --card: #ffffff;
+  --raised: #ffffff;
+  --content: #121c25; /* winter ink */
+  --muted: #52606d;
+  --line: oklch(0 0 0 / 0.08);
+  --accent: #1c4a75; /* deep winter water */
+  --accent-content: #ffffff;
+  --ember: #c7361f; /* errors only */
+  --mark: #2e8bdc; /* the drop in the emblem */
+  --water: #3b86c8; /* rivers on the map */
+  --shadow: none;
+  --lift: 0 1px 3px oklch(0 0 0 / 0.12);
+  --tonal: color-mix(in oklab, var(--accent) 16%, var(--card));
+  --land: #e2e9ef;
+  --land-line: oklch(0 0 0 / 0.14);
+
+  /* River danger (flood-types.ts). Text colour per level chosen for ≥4.5:1. */
+  --d-low: #2a6a9a;
+  --d-moderate: #e3b021;
+  --d-high: #e3741b;
+  --d-veryhigh: #c7361f;
+  --d-extreme: #5b1e6e;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0c1218;
+    --card: #151d26;
+    --raised: #1b2530;
+    --content: #e3eaf1;
+    --muted: #97a5b3;
+    --line: oklch(1 0 0 / 0.1);
+    --accent: #8cc0f0;
+    --accent-content: #0c1218;
+    --ember: #ff7a5c;
+    --mark: #5aa9ee;
+    --water: #4f9be0;
+    --land: #1c2935;
+    --land-line: oklch(1 0 0 / 0.16);
+    --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+    --d-low: #2f74ab;
+    --d-extreme: #7a2d92;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #0c1218;
+  --card: #151d26;
+  --raised: #1b2530;
+  --content: #e3eaf1;
+  --muted: #97a5b3;
+  --line: oklch(1 0 0 / 0.1);
+  --accent: #8cc0f0;
+  --accent-content: #0c1218;
+  --ember: #ff7a5c;
+  --mark: #5aa9ee;
+  --water: #4f9be0;
+  --land: #1c2935;
+  --land-line: oklch(1 0 0 / 0.16);
+  --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+  --d-low: #2f74ab;
+  --d-extreme: #7a2d92;
+  color-scheme: dark;
+}
+
+/* River points on the map: a soft ring that breathes on rivers above the 2-year flow. Transform and opacity only. */
+.gauge-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: gauge-pulse 2.2s ease-out infinite;
+}
+@keyframes gauge-pulse {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gauge-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}

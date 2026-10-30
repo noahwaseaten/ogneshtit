@@ -1,7 +1,10 @@
 name: Alerts
 
-# Vercel's free cron runs once a day, so this checks for new danger, fires and warnings every
-# 30 minutes. Needs the repository secret CRON_SECRET (same value as in Vercel).
+# Vercel's free cron runs once a day, so this checks every 30 minutes for new danger, fires, rising rivers and
+# warnings, and refreshes the saved copies of the data. Secrets: CRON_SECRET (ОгнеЩит, same value as in its Vercel
+# project), FLOOD_CRON_SECRET and AIR_CRON_SECRET (if they are not set, CRON_SECRET is used, so the projects can share one).
+# Addresses: repository variables FIRE_URL and FLOOD_URL override the defaults. ogneshtit.noahwaseaten.com keeps
+# serving /api after the move to fire.noahwaseaten.com, so the default works before and after it.
 on:
   schedule:
     - cron: "*/30 * * * *"
@@ -10,15 +13,40 @@ on:
 permissions: {}
 
 jobs:
-  check:
+  fire:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Run the alert check and refresh the backups
+      - name: ОгнеЩит alerts and backups
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          URL: ${{ vars.FIRE_URL || 'https://ogneshtit.noahwaseaten.com' }}
         run: |
           if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET is not set"; exit 0; fi
-          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" https://ogneshtit.noahwaseaten.com/api/cron/alerts
+          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/alerts"
           # Saved copies of every data source (writes only when they are older than 6 hours).
-          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" https://ogneshtit.noahwaseaten.com/api/cron/backup || true
+          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/backup" || true
+  flood:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: ВодоЩит alerts and backups
+        env:
+          CRON_SECRET: ${{ secrets.FLOOD_CRON_SECRET || secrets.CRON_SECRET }}
+          URL: ${{ vars.FLOOD_URL || 'https://flood.noahwaseaten.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "No cron secret is set"; exit 0; fi
+          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/alerts"
+          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/backup" || true
+  air:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: ВъздухоЩит morning alerts and backups
+        env:
+          CRON_SECRET: ${{ secrets.AIR_CRON_SECRET || secrets.CRON_SECRET }}
+          URL: ${{ vars.AIR_URL || 'https://air.noahwaseaten.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "No cron secret is set"; exit 0; fi
+          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/alerts"
+          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/backup" || true
