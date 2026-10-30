@@ -17,10 +17,11 @@ function centre(app: AppId, mark: string, cut: string) {
   if (app === "flood")
     return [<path key="d" d={DROP} fill={mark} />, <path key="s" d={FLAKE} stroke={cut} strokeWidth={0.85} strokeLinecap="round" fill="none" />];
   if (app === "air") return [<path key="g" d={GUSTS} stroke={mark} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" fill="none" />];
-  // The hub carries both, side by side (each scaled to 82% around the centre, then moved 4.4 units out).
+  // The hub carries the whole family: one dot in each app's colour, air on top, water and fire below.
   return [
-    <path key="f" d={FLAME} fill={BRANDS.fire.mark} transform="translate(-1.52 4.66) scale(0.82)" />,
-    <path key="d" d={DROP} fill={BRANDS.flood.mark} transform="translate(7.28 4.66) scale(0.82)" />,
+    <circle key="a" cx={16} cy={12.6} r={2.6} fill={BRANDS.air.mark} />,
+    <circle key="w" cx={12.4} cy={18.6} r={2.6} fill={BRANDS.flood.mark} />,
+    <circle key="f" cx={19.6} cy={18.6} r={2.6} fill={BRANDS.fire.mark} />,
   ];
 }
 

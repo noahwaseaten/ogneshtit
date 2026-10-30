@@ -160,13 +160,18 @@ function AppCard({ app, lat, lon, first }: { app: AppId; lat: number; lon: numbe
       </div>
 
       <div className="mt-auto grid grid-cols-[1fr_auto] gap-2 p-5 lg:p-6">
-        <a href={familyHref(app, lang)} className="pressable inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-[16px] font-semibold text-accent-content">
-          {t(`Отвори ${b.name.bg}`, `Open ${b.name.en}`)}
+        <a href={familyHref(app, lang)} className="pressable inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-center text-[16px] font-semibold leading-tight text-accent-content">
+          {t("Отвори", "Open")}
+          <span className="sr-only">{b.name[lang]}</span>
           <ArrowUpRight size={18} strokeWidth={2} aria-hidden />
         </a>
-        <a href={familyHref(app, lang, "/nastroiki") + "#install"} className="pressable hover-fill inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-line px-4 text-[16px] font-semibold">
-          <Download size={18} strokeWidth={2} aria-hidden />
-          {t("Инсталирай", "Install")}
+        <a
+          href={familyHref(app, lang, "/nastroiki") + "#install"}
+          aria-label={t(`Как да инсталирате ${b.name.bg}`, `How to install ${b.name.en}`)}
+          title={t("Инсталирай", "Install")}
+          className="pressable hover-fill grid size-12 place-items-center rounded-2xl bg-line"
+        >
+          <Download size={20} strokeWidth={2} aria-hidden />
         </a>
       </div>
     </article>
