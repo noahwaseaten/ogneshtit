@@ -5,12 +5,14 @@
 <h1 align="center">Щит</h1>
 
 <p align="center">
-  Безплатни приложения за опасностите в България: <strong>ОгнеЩит</strong> за горските пожари и
-  <strong>ВодоЩит</strong> за наводненията. Всяко работи самостоятелно и се инсталира отделно.
+  Безплатни приложения за опасностите в България: <strong>ВъздухоЩит</strong> за смога, <strong>ВодоЩит</strong>
+  за наводненията и <strong>ОгнеЩит</strong> за горските пожари. Всяко работи самостоятелно и се инсталира отделно.
 </p>
 
 <p align="center">
   <a href="https://shield.noahwaseaten.com"><strong>shield.noahwaseaten.com</strong></a>
+  ·
+  <a href="https://air.noahwaseaten.com">air.noahwaseaten.com</a>
   ·
   <a href="https://fire.noahwaseaten.com">fire.noahwaseaten.com</a>
   ·
@@ -28,10 +30,16 @@
 | | Адрес | Какво прави |
 | --- | --- | --- |
 | **Щит** | [shield.noahwaseaten.com](https://shield.noahwaseaten.com) | Начална страница: днешната оценка на двете приложения за вашето място, като първо е това, чийто сезон е сега. |
+| **ВъздухоЩит** | [air.noahwaseaten.com](https://air.noahwaseaten.com) | Въздухът сега за всяко място (граждански датчици наоколо или прогнозата на CAMS), нивата и съветите на Европейския индекс за качество на въздуха за всички или за деца, възрастни и хора с астма, кога въздухът е най-чист и най-мръсен до 48 часа, карта на датчиците, градовете от най-мръсния до най-чистия и какво да направите. |
 | **ОгнеЩит** | [fire.noahwaseaten.com](https://fire.noahwaseaten.com) | Опасност от горски пожар по канадския индекс FWI (шестте нива на EFFIS), огън от спътниците на NASA, пожарите по области от 2007 г. (ИАГ), проверка на камиони с дървесина и сигнали за незаконна сеч. |
 | **ВодоЩит** | [flood.noahwaseaten.com](https://flood.noahwaseaten.com) | Опасност от наводнение днес и до 15 дни за всяко място по прогнозата на GloFAS, дъжд, сняг и топене, предупреждения на НИМХ, измерените нива на Дунав, какво да правите преди, по време и след наводнение и сигнали до басейновите дирекции. |
 
-Защо наводнения: по данните на GloFAS за 1984 до 2025 г. в 40-те точки извън Дунав реките носят най-много вода от
+Защо въздух за зимата: България има най-високата в ЕС смъртност, свързана с фините прахови частици (158 на 100 000
+души, [Euronews по данни на EEA](https://www.euronews.com/2025/01/20/which-countries-have-the-deadliest-air-pollution-in-europe)),
+а главният им източник у нас е отоплението в домовете ([EEA](https://www.eea.europa.eu/en/europe-environment-2025/countries/bulgaria/health-impacts-of-air-pollution)).
+Смогът се вижда всеки зимен ден и всеки има полза да знае кога да излезе и кога да проветри.
+
+Защо и наводнения: по данните на GloFAS за 1984 до 2025 г. в 40-те точки извън Дунав реките носят най-много вода от
 март до юни, когато се топи снегът, а най-високата вода на годината е идвала във всеки сезон, включително през
 декември и февруари. Затова зимата е времето да се следят реките, дъждът и снегът.
 
@@ -56,6 +64,9 @@
 
 | Данни | Източник | Приложение |
 | --- | --- | --- |
+| Прогноза за въздуха | [CAMS](https://atmosphere.copernicus.eu) (Copernicus) чрез [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) | ВъздухоЩит |
+| Измерен въздух | Граждански датчици на [sensor.community](https://sensor.community) | ВъздухоЩит |
+| Нива и съвети за здравето | [Европейски индекс за качество на въздуха](https://airindex.eea.europa.eu/AQI/index.html) (EEA) | ВъздухоЩит |
 | Прогноза и история на реките | [GloFAS v4](https://global-flood.emergency.copernicus.eu) (Copernicus) чрез [Open-Meteo Flood API](https://open-meteo.com/en/docs/flood-api) | ВодоЩит |
 | Измерени нива на Дунав и прогноза | [ИА „Проучване и поддържане на река Дунав“](https://www.appd-bg.org/hidrology) | ВодоЩит |
 | Време, дъжд, сняг, въздух, търсене на места | [Open-Meteo](https://open-meteo.com) | и двете |
@@ -71,7 +82,9 @@
 
 ## English
 
-Щит ("Shield") is a family of free web apps about natural dangers in Bulgaria, built for a school project.
+Щит ("Shield") is a family of free web apps about dangers in Bulgaria, built for a school project.
+**Air Shield** (ВъздухоЩит) shows the air now from citizen sensors nearby or the CAMS forecast, rated on the EEA's
+European Air Quality Index with its health advice, plus the cleanest hours to go out and a city ranking.
 **Fire Shield** (ОгнеЩит) rates today's forest fire danger with the Canadian Fire Weather Index, shows NASA FIRMS
 hotspots, official fire statistics, timber truck checks and illegal logging reports. **Flood Shield** (ВодоЩит) rates
 flood danger from the GloFAS ensemble against each river's own 2-, 5- and 20-year flows, adds rain, snow and melt,
@@ -81,6 +94,7 @@ directorates. **The hub** shows both for one place. Nothing personal is stored o
 ### Repository
 
 ```
+apps/air       ВъздухоЩит (Vercel project "vazduhoshtit", root directory apps/air)
 apps/fire      ОгнеЩит   (Vercel project "ogneshtit", root directory apps/fire)
 apps/flood     ВодоЩит   (Vercel project "vodoshtit", root directory apps/flood)
 apps/hub       Щит hub   (Vercel project "shtit", root directory apps/hub)
@@ -96,6 +110,7 @@ npm install
 npm run dev:fire     # http://localhost:3000
 npm run dev:flood    # http://localhost:3002
 npm run dev:hub      # http://localhost:3003
+npm run dev:air      # http://localhost:3004
 ```
 
 | Script (root) | What it does |

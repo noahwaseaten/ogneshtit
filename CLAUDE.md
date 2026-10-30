@@ -1,14 +1,15 @@
 @AGENTS.md
 
-# Щит (ОгнеЩит, ВодоЩит and the hub): notes for agents
+# Щит (ВъздухоЩит, ВодоЩит, ОгнеЩит and the hub): notes for agents
 
-Public repo `noahwaseaten/ogneshtit`, a monorepo with three Next.js apps for ordinary people in Bulgaria (team MunchCode):
+Public repo `noahwaseaten/ogneshtit`, a monorepo with four Next.js apps for ordinary people in Bulgaria (team MunchCode):
 
 | App | Folder | Vercel project | Address |
 | --- | --- | --- | --- |
+| ВъздухоЩит / Air Shield: the air now and by the hour, winter smog, sensors, cities | `apps/air` | `vazduhoshtit` | https://air.noahwaseaten.com |
 | ОгнеЩит / Fire Shield: fire danger, satellite hotspots, fire statistics, truck checks, logging reports | `apps/fire` | `ogneshtit` | https://fire.noahwaseaten.com (was ogneshtit.noahwaseaten.com) |
 | ВодоЩит / Flood Shield: river flood danger (GloFAS), rain and snow, warnings, Danube levels, river reports | `apps/flood` | `vodoshtit` | https://flood.noahwaseaten.com |
-| Щит / Shield hub: both apps' answer for one place | `apps/hub` | `shtit` | https://shield.noahwaseaten.com |
+| Щит / Shield hub: every app's answer for one place, the season's app first | `apps/hub` | `shtit` | https://shield.noahwaseaten.com |
 
 Shared code is `packages/core` (`@shtit/core`, TypeScript source imported as `@shtit/core/<path>`). Started as a school
 project on „Защита на гората“.
@@ -30,7 +31,7 @@ project on „Защита на гората“.
 
 ```bash
 npm install                        # at the root (npm workspaces)
-npm run dev:fire | dev:flood | dev:hub   # ports 3000, 3002, 3003
+npm run dev:fire | dev:flood | dev:hub | dev:air   # ports 3000, 3002, 3003, 3004
 npm run typegen && npm run typecheck     # every workspace
 npm run lint
 npm test                           # fire: FWI, fires, passes; flood: stats, 30% rule, АППД parsers, river points
@@ -44,7 +45,7 @@ npm run orbits -w @shtit/fire
 
 CI (`.github/workflows/ci.yml`, job `check`) runs typegen, typecheck, lint, test and build for every workspace.
 Env: `FIRMS_MAP_KEY` (fire only), `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN`
-(fire and flood, each project its own Blob store and VAPID keys). Never commit them.
+(fire, flood and air, each project its own Blob store and VAPID keys). Never commit them.
 
 ## Monorepo rules
 
@@ -174,11 +175,30 @@ Notes:
 - Alerts (`/api/cron/alerts`): river level within 3 days, once per rise (`sent.river` = highest level announced);
   orange/red flood-related warnings once each; quiet 22:00 to 07:00.
 
+## ВъздухоЩит (`apps/air`)
+
+Why it exists: winter smog is Bulgaria's deadliest winter danger (highest PM2.5 death rate in the EU, mostly from home
+heating, per the EEA) and something people check daily. Answers: how is the air now, is it OK for my child or my asthma,
+when should I go out or air the room.
+
+| What | Source | Code |
+| --- | --- | --- |
+| Scale and advice | EEA European Air Quality Index, current hourly bands for PM2.5 and PM10; the place takes the worse band; EEA advice for everyone and for sensitive people | `src/lib/air-types.ts` |
+| Forecast | CAMS Europe via Open-Meteo (`domains=cams_europe`), hourly PM2.5/PM10, 1 day back and 3 ahead; one batched request for the 27 oblast centres | `src/lib/air.ts`, `/api/place`, `/api/cities` |
+| Measured | sensor.community `airrohr/v1/filter/country=BG` (5-minute values, UTC), outdoor only, last 30 min, sane values; a place uses the median within 3 km (≥3 sensors) else 8 km | `getLiveSensors`, `sensorsNear`, `/api/sensors` |
+| Planner | Cleanest and dirtiest 3 daytime hours (07 to 22) ahead, tomorrow if today is over | `windows()` in `air-types.ts` |
+| Reports | Waste burning: municipality ecology department or РИОСВ via МОСВ's green phone page (linked, no invented fines) | `src/app/[lang]/pomogni/page.tsx` |
+
+Notes: ИАОС's own site has a broken TLS chain and OpenAQ needs a key, so official stations come in only through CAMS.
+Low-cost sensors read high in fog; the UI says so and shows the forecast next to them. Forecast hours are local Sofia
+strings: read HH:MM from them (`hhmm`), never add a fixed offset. Alerts: one per morning (07:00 to 10:00) at most.
+
 ## Layout of the repo
 
 ```
 apps/fire/      ОгнеЩит: src/app/[lang]/ (/, /karta, /pozhari, /pomogni, /nastroiki), src/app/api, src/lib, src/components
 apps/flood/     ВодоЩит: src/app/[lang]/ (/, /karta, /reki, /pomogni, /pomogni/signal, /nastroiki, /s), src/lib, scripts
+apps/air/       ВъздухоЩит: src/app/[lang]/ (/, /karta, /gradove, /pomogni, /nastroiki, /s), src/lib, scripts
 apps/hub/       Щит: one page (src/components/Hub.tsx), no API, no service worker
 packages/core/  shared code (src/ui, src/i18n, src/data, src/styles), oblast generators in scripts/, fonts in assets/
 apps/*/public/sw.js   offline service worker per app (bump VERSION when its shell list changes)

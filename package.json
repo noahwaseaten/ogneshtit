@@ -2,7 +2,7 @@
   "name": "shtit",
   "version": "2.0.0",
   "private": true,
-  "description": "Щит / Shield: ОгнеЩит (forest fires) and ВодоЩит (floods), free apps for people in Bulgaria.",
+  "description": "Щит / Shield: ВъздухоЩит (air), ВодоЩит (floods) and ОгнеЩит (forest fires), free apps for people in Bulgaria.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -21,7 +21,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present"
+    "build": "npm run build --workspaces --if-present",
+    "dev:air": "npm run dev -w @shtit/air"
   },
   "devDependencies": {
     "eslint": "9.39.5",
