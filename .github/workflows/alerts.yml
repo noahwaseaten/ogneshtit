@@ -1,10 +1,8 @@
 name: Alerts
 
-# Vercel's free cron runs once a day, so this checks every 30 minutes for new danger, fires, rising rivers and
-# warnings, and refreshes the saved copies of the data. Secrets: CRON_SECRET (ОгнеЩит, same value as in its Vercel
-# project), FLOOD_CRON_SECRET and AIR_CRON_SECRET (if they are not set, CRON_SECRET is used, so the projects can share one).
-# Addresses: repository variables FIRE_URL and FLOOD_URL override the defaults. ogneshtit.noahwaseaten.com keeps
-# serving /api after the move to fire.noahwaseaten.com, so the default works before and after it.
+# Vercel's free cron runs once a day, so this asks the three apps every 30 minutes to send any new alerts and refresh
+# their saved copies of the data. One repository secret, CRON_SECRET, with the same value as CRON_SECRET in each of
+# the three Vercel projects. If the secret is missing or does not match, the run says so and stays green.
 on:
   schedule:
     - cron: "*/30 * * * *"
@@ -13,40 +11,22 @@ on:
 permissions: {}
 
 jobs:
-  fire:
+  ping:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: ОгнеЩит alerts and backups
+      - name: Ask each app to check for alerts
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          URL: ${{ vars.FIRE_URL || 'https://ogneshtit.noahwaseaten.com' }}
         run: |
-          if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET is not set"; exit 0; fi
-          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/alerts"
-          # Saved copies of every data source (writes only when they are older than 6 hours).
-          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/backup" || true
-  flood:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: ВодоЩит alerts and backups
-        env:
-          CRON_SECRET: ${{ secrets.FLOOD_CRON_SECRET || secrets.CRON_SECRET }}
-          URL: ${{ vars.FLOOD_URL || 'https://flood.noahwaseaten.com' }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then echo "No cron secret is set"; exit 0; fi
-          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/alerts"
-          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/backup" || true
-  air:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: ВъздухоЩит morning alerts and backups
-        env:
-          CRON_SECRET: ${{ secrets.AIR_CRON_SECRET || secrets.CRON_SECRET }}
-          URL: ${{ vars.AIR_URL || 'https://air.noahwaseaten.com' }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then echo "No cron secret is set"; exit 0; fi
-          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/alerts"
-          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$URL/api/cron/backup" || true
+          if [ -z "$CRON_SECRET" ]; then echo "::warning::CRON_SECRET is not set in the repository secrets"; exit 0; fi
+          for app in fire flood air; do
+            for job in alerts backup; do
+              code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "https://$app.noahwaseaten.com/api/cron/$job" || echo 000)
+              case "$code" in
+                2*) echo "$app $job: ok" ;;
+                401) echo "::warning::$app: CRON_SECRET in Vercel does not match the GitHub secret" ;;
+                *) echo "::warning::$app $job answered $code" ;;
+              esac
+            done
+          done
