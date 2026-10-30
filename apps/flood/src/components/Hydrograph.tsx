@@ -62,29 +62,24 @@ export function Hydrograph({ f }: { f: RiverForecast }) {
     return `${upper}${lower}Z`;
   };
   const day = (d: string, long = false) => time(d + "T12:00:00Z", long ? { weekday: "short", day: "numeric", month: "short" } : { day: "numeric", month: "short" });
-  const h = hover != null ? pts[hover] : null;
+  // Until the chart is touched the readout shows the forecast's highest day, so there is always a number to read.
+  const peakAt = pts.reduce((m, p, i) => (p.future && p.q > pts[m].q ? i : m), Math.max(firstFuture, 0));
+  const sel = hover ?? peakAt;
+  const h = pts[sel];
   const peak = f.days.reduce((m, d) => (d.median > m.median ? d : m), f.days[0]);
 
   return (
     <figure className="flex flex-col gap-2">
-      <div className="min-h-[2lh] text-[14px] leading-snug tabular-nums" aria-live="polite">
-        {h ? (
-          <>
-            <span className="font-semibold">{day(h.date, true)}</span>
-            {": "}
-            {h.future
-              ? t(
-                  `около ${flow(h.q)} m³/s, вероятно между ${flow(h.lo)} и ${flow(h.hi)}`,
-                  `about ${flow(h.q)} m³/s, likely between ${flow(h.lo)} and ${flow(h.hi)}`,
-                )
-              : `${flow(h.q)} m³/s`}
-          </>
-        ) : (
-          <span className="text-muted">
-            {t("Докоснете графиката за стойност по дни.", "Touch the chart to read a day.")}
-          </span>
-        )}
-      </div>
+      <p className="flex min-h-[1lh] flex-wrap items-baseline gap-x-2 text-[14px] leading-snug tabular-nums" aria-live="polite">
+        <span className="font-semibold">
+          {hover == null && <span className="text-muted">{t("Най-много ", "Peak ")}</span>}
+          {sel === firstFuture ? t("днес", "today") : day(h.date, true)}
+        </span>
+        <span>
+          {flow(h.q)} m³/s
+          {h.future && h.hi > h.lo && <span className="text-muted">{` · ${flow(h.lo)} ${t("до", "to")} ${flow(h.hi)}`}</span>}
+        </span>
+      </p>
       <div ref={box}>
       <svg
         viewBox={`0 0 ${W} ${H}`}
@@ -129,7 +124,7 @@ export function Hydrograph({ f }: { f: RiverForecast }) {
         )}
         <path d={path((p) => p.q, 0, Math.max(firstFuture, 1))} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         <path d={path((p) => p.q, Math.max(firstFuture - 1, 0))} fill="none" stroke="var(--accent)" strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
-        {h && (
+        {hover != null && (
           <g pointerEvents="none">
             <line x1={x(hover!)} x2={x(hover!)} y1={PAD.t} y2={H - PAD.b} stroke="var(--content)" strokeOpacity={0.5} strokeWidth={1} />
             <circle cx={x(hover!)} cy={y(h.q)} r={5} fill="var(--accent)" stroke="var(--card)" strokeWidth={2} />
@@ -143,18 +138,18 @@ export function Hydrograph({ f }: { f: RiverForecast }) {
         </text>
       </svg>
       </div>
-      <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
+      <figcaption className="flex gap-x-4 text-[13px] text-muted">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-0.5 w-4 rounded-full bg-accent" aria-hidden />
-          {t("досега (модел)", "so far (model)")}
+          {t("досега", "so far")}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-0.5 w-4 border-t-2 border-dashed border-accent" aria-hidden />
-          {t("прогноза, средно", "forecast, middle")}
+          {t("прогноза", "forecast")}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-4 rounded-sm bg-accent/25" aria-hidden />
-          {t("където са повечето от 51 прогнози", "where most of 51 runs are")}
+          {t("вероятен обхват", "likely range")}
         </span>
       </figcaption>
     </figure>

@@ -1,22 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, LocateFixed, Mail, Phone, Send, X, ExternalLink, Check, ChevronDown } from "lucide-react";
+import { Axe, Camera, Crosshair, Flame, LocateFixed, Mail, MoreHorizontal, Phone, Send, Trash2, Truck, X, ExternalLink, Check, ChevronDown, type LucideIcon } from "lucide-react";
 import { getPosition, useLocation } from "@shtit/core/client";
 import { useI18n } from "@shtit/core/i18n/client";
 import { formatters } from "@shtit/core/i18n/format";
 import { placeName } from "@shtit/core/i18n/names";
 import { nearestRdg, telOf, useRdgs } from "./rdg";
 import { Sheet } from "@shtit/core/ui/Sheet";
+import { ChoiceList } from "@shtit/core/ui/ChoiceList";
 
 // What was seen. The report itself is always written in Bulgarian, because it goes to a Bulgarian office.
-const KINDS: [string, string][] = [
-  ["Сеч без марки или позволително", "Cutting without marks or a permit"],
-  ["Извозване на дървесина", "Timber being hauled away"],
-  ["Бракониерство", "Poaching"],
-  ["Палене на огън", "Someone lighting a fire"],
-  ["Отпадъци в гората", "Rubbish in the forest"],
-  ["Друго", "Something else"],
+const KINDS: [string, string, LucideIcon][] = [
+  ["Сеч без марки или позволително", "Cutting without marks or a permit", Axe],
+  ["Извозване на дървесина", "Timber being hauled away", Truck],
+  ["Бракониерство", "Poaching", Crosshair],
+  ["Палене на огън", "Someone lighting a fire", Flame],
+  ["Отпадъци в гората", "Rubbish in the forest", Trash2],
+  ["Друго", "Something else", MoreHorizontal],
 ];
 const bgTime = formatters("bg").time;
 
@@ -150,22 +151,15 @@ export function ReportForm() {
       )}
       <p className="pt-2 text-[14px] font-medium text-ember">{t("Ако сечта или пожарът е в момента, звъннете на 112.", "If the cutting or a fire is happening now, call 112.")}</p>
 
-      <fieldset className="mt-5">
-        <legend className="text-[15px] font-semibold">{t("Какво видяхте?", "What did you see?")}</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {KINDS.map((k, i) => (
-            <label
-              key={k[0]}
-              className={`pressable inline-flex min-h-11 cursor-pointer items-center rounded-full border px-3.5 text-[15px] font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
-                kindIx === i ? "border-content bg-content text-surface" : "hover-fill border-line"
-              }`}
-            >
-              <input type="radio" name="kind" value={k[0]} checked={kindIx === i} onChange={() => setKindIx(i)} className="sr-only" />
-              {tp(k)}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <div className="mt-5">
+        <p className="pb-2 text-[15px] font-semibold">{t("Какво видяхте?", "What did you see?")}</p>
+        <ChoiceList
+          label={t("Какво видяхте?", "What did you see?")}
+          value={String(kindIx)}
+          onChange={(v) => setKindIx(Number(v))}
+          options={KINDS.map((k, i) => ({ value: String(i), title: tp([k[0], k[1]]), Icon: k[2] }))}
+        />
+      </div>
 
       <div className="mt-5">
         <p className="text-[15px] font-semibold">{t("Къде?", "Where?")}</p>

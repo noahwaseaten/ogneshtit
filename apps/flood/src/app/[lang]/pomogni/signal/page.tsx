@@ -21,7 +21,6 @@ export default async function Page({ params }: Props) {
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <PageCard lang={lang} title={t("Сигнал за река", "Report a river problem")} body={t("Подгответе сигнал до басейновата дирекция със снимки и точни координати.", "Prepare a report for the river basin directorate with photos and exact coordinates.")} path="/pomogni/signal" />
       <BackLink href="/pomogni" label={t("Помогни", "Help")} />
-      <h1 className="sr-only">{t("Сигнал за река", "Report a river problem")}</h1>
       <ReportForm />
     </div>
   );
