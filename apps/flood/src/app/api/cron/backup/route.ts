@@ -1,3 +1,4 @@
+import { cronAuthorized } from "@shtit/core/alerts";
 import { connection } from "next/server";
 import { backupAge, saveBackup } from "@shtit/core/backup";
 import { WARNINGS_BACKUP, getLiveWarnings } from "@shtit/core/warnings";
@@ -11,7 +12,7 @@ const EVERY = 6 * 3600e3;
 
 export async function GET(req: Request) {
   await connection();
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) return new Response("unauthorized", { status: 401 });
+  if (!cronAuthorized(req)) return new Response("unauthorized", { status: 401 });
   const force = new URL(req.url).searchParams.has("force");
   const age = await backupAge(GAUGES_BACKUP);
   if (!force && age != null && age < EVERY) return Response.json({ skipped: "fresh", ageMinutes: Math.round(age / 60e3) });

@@ -78,3 +78,9 @@ export const quietHours = () => {
   const h = sofiaHour();
   return h >= 22 || h < 7;
 };
+
+/** Whether a cron call carries the secret. With no CRON_SECRET set, nothing is allowed (never "Bearer undefined"). */
+export function cronAuthorized(req: Request) {
+  const secret = process.env.CRON_SECRET;
+  return !!secret && req.headers.get("authorization") === `Bearer ${secret}`;
+}

@@ -1,3 +1,4 @@
+import { cronAuthorized } from "@shtit/core/alerts";
 import { pick } from "@shtit/core/i18n/lang";
 import { placeName } from "@shtit/core/i18n/names";
 import { connection } from "next/server";
@@ -28,7 +29,7 @@ type Msg = { title: string; body: string; url: string; tag: string };
 
 export async function GET(req: Request) {
   await connection();
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) return new Response("unauthorized", { status: 401 });
+  if (!cronAuthorized(req)) return new Response("unauthorized", { status: 401 });
   const hour = sofiaHour();
   if (hour >= 22 || hour < 7) return Response.json({ skipped: "quiet hours" });
 

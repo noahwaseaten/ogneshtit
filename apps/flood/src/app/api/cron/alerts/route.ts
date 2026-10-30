@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { pick } from "@shtit/core/i18n/lang";
 import { placeName } from "@shtit/core/i18n/names";
-import { quietHours } from "@shtit/core/alerts";
+import { quietHours, cronAuthorized } from "@shtit/core/alerts";
 import { getWarnings, warningIn } from "@shtit/core/warnings";
 import { allSubs, deleteSub, push, saveSub, type Sub } from "@/lib/alerts";
 import { getPlace } from "@/lib/floods";
@@ -21,7 +21,7 @@ const formatDay = (date: string, lang: "bg" | "en") =>
 
 export async function GET(req: Request) {
   await connection();
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) return new Response("unauthorized", { status: 401 });
+  if (!cronAuthorized(req)) return new Response("unauthorized", { status: 401 });
   if (quietHours()) return Response.json({ skipped: "quiet hours" });
 
   const [subs, warnings] = await Promise.all([allSubs(), getWarnings().catch(() => null)]);
