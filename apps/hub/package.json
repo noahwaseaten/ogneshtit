@@ -22,5 +22,13 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "vaul": "1.1.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
   }
 }
