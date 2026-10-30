@@ -6,7 +6,7 @@ import { useJson } from "@shtit/core/client";
 import { useI18n } from "@shtit/core/i18n/client";
 import { oblastShort } from "@shtit/core/i18n/names";
 import type { RiskResponse } from "@/lib/risk";
-import type { Warning, WarningsResponse } from "@shtit/core/warnings";
+import type { Warning, WarningsResponse } from "@shtit/core/warning-types";
 
 const LEVEL = {
   2: { label: ["Жълт код", "Yellow warning"], bg: "#e3b021", fg: "#1b1b1b" },

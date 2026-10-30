@@ -1,0 +1,26 @@
+{
+  "name": "@shtit/hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Щит: ОгнеЩит и ВодоЩит на едно място.",
+  "license": "MIT",
+  "homepage": "https://shield.noahwaseaten.com",
+  "scripts": {
+    "dev": "next dev -p 3003",
+    "build": "next build",
+    "start": "next start -p 3003",
+    "typegen": "next typegen",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@fontsource-variable/onest": "5.3.1",
+    "@shtit/core": "*",
+    "@vercel/analytics": "^2.0.1",
+    "lucide-react": "1.62.0",
+    "next": "16.4.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "vaul": "1.1.2"
+  }
+}

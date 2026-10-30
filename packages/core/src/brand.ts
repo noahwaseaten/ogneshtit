@@ -64,7 +64,7 @@ export const REPO = "https://github.com/noahwaseaten/ogneshtit";
 /** Sent with server requests to public sources, so they know who is asking. */
 export const userAgent = (app: AppId) => `Shtit-${app}/2.0 (+${REPO})`;
 
-/** Which app the hub puts first: fire in the warm half of the year (May to October), floods in the cold half. */
+/** Which app the hub puts first: fire in the warm half of the year (April to September), floods in the cold half. */
 export function seasonFirst(month: number): AppId {
-  return month >= 5 && month <= 10 ? "fire" : "flood";
+  return month >= 4 && month <= 9 ? "fire" : "flood";
 }

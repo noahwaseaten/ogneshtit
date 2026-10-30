@@ -46,7 +46,7 @@ export function appViewport(app: AppId): Viewport {
   };
 }
 
-export function AppDocument({ app, lang, children }: { app: AppId; lang: Lang; children: React.ReactNode }) {
+export function AppDocument({ app, lang, children, offline = true }: { app: AppId; lang: Lang; children: React.ReactNode; offline?: boolean }) {
   return (
     <html lang={lang} suppressHydrationWarning>
       <head>
@@ -56,7 +56,7 @@ export function AppDocument({ app, lang, children }: { app: AppId; lang: Lang; c
         <BrandProvider app={app}>
           <LangProvider lang={lang}>
             {children}
-            <RegisterSW />
+            {offline && <RegisterSW />}
           </LangProvider>
         </BrandProvider>
         <Analytics />

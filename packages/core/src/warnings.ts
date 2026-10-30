@@ -1,23 +1,12 @@
 import { cacheLife } from "next/cache";
 import { loadBackup } from "./backup";
+import type { Warning, WarningsResponse } from "./warning-types";
 
 // Official weather warnings from НИМХ (Bulgaria's met service), published through MeteoAlarm.
 const FEED = "https://feeds.meteoalarm.org/api/v1/warnings/feeds-bulgaria";
 
-export type Warning = {
-  level: 1 | 2 | 3 | 4; // green, yellow, orange, red
-  type: string; // e.g. "wind", "high-temperature", "forest-fire"
-  event: string;
-  headline: string;
-  description: string;
-  areas: string[];
-  onset: string;
-  expires: string;
-  /** The same warning in English, when MeteoAlarm has it. */
-  en?: { event: string; headline: string; description: string };
-};
-
-export type WarningsResponse = { warnings: Warning[]; updated: string; backupFrom?: string };
+export type { Warning, WarningsResponse } from "./warning-types";
+export { warningIn } from "./warning-types";
 
 export const WARNINGS_BACKUP = "warnings";
 

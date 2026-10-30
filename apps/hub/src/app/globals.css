@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import "../../../../packages/core/src/styles/base.css";
+@source "../../../../packages/core/src";
+
+/* Щит tokens: neutral slate, so both apps' own colours stand out on their cards. */
+:root {
+  --surface: #f2f4f6;
+  --card: #ffffff;
+  --raised: #ffffff;
+  --content: #141a20;
+  --muted: #56606a;
+  --line: oklch(0 0 0 / 0.08);
+  --accent: #24313c;
+  --accent-content: #ffffff;
+  --ember: #c7361f;
+  --mark: #e0482c;
+  --shadow: none;
+  --lift: 0 1px 3px oklch(0 0 0 / 0.12);
+  --tonal: color-mix(in oklab, var(--accent) 14%, var(--card));
+  --land: #e5e8eb;
+  --land-line: oklch(0 0 0 / 0.14);
+  --d-low: #2f7d4a;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0f1317;
+    --card: #181e24;
+    --raised: #1e252c;
+    --content: #e6eaee;
+    --muted: #9aa4ae;
+    --line: oklch(1 0 0 / 0.1);
+    --accent: #c9d4de;
+    --accent-content: #0f1317;
+    --ember: #ff7a5c;
+    --mark: #ff7a5c;
+    --land: #222a31;
+    --land-line: oklch(1 0 0 / 0.16);
+    --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #0f1317;
+  --card: #181e24;
+  --raised: #1e252c;
+  --content: #e6eaee;
+  --muted: #9aa4ae;
+  --line: oklch(1 0 0 / 0.1);
+  --accent: #c9d4de;
+  --accent-content: #0f1317;
+  --ember: #ff7a5c;
+  --mark: #ff7a5c;
+  --land: #222a31;
+  --land-line: oklch(1 0 0 / 0.16);
+  --lift: 0 0 0 1px oklch(1 0 0 / 0.08);
+  color-scheme: dark;
+}

@@ -11,7 +11,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "map": "node scripts/oblasts.mjs",
-    "border": "node scripts/bulgaria.mjs"
+    "border": "node scripts/bulgaria.mjs",
+    "lint": "eslint src"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

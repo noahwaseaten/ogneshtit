@@ -63,7 +63,7 @@ export function MyCoords() {
       <p className="text-[13px] tabular-nums opacity-90">{t("Точност около", "Accurate to about")} {Math.round(pos.acc)} {t("м", "m")}</p>
       <button
         onClick={copy}
-        className="pressable mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-[15px] font-semibold text-[#8a1a12]"
+        className="pressable mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-[15px] font-semibold text-[var(--sos,#8a1a12)]"
       >
         <span className="relative grid size-[18px] place-items-center">
           <Copy size={18} strokeWidth={2} aria-hidden className="swap absolute" data-hidden={copied} />
