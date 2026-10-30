@@ -67,7 +67,7 @@ export function Today() {
           </section>
           <section aria-labelledby="cities-title" className="enter flex flex-col gap-2">
             <h2 id="cities-title" className="px-1 font-display text-[20px] font-semibold">
-              {t("Къде е най-мръсно днес", "Where the air is worst today")}
+              {t("Къде е най-мръсно сега", "Where the air is worst now")}
             </h2>
             <CityRanking limit={5} highlight={city} />
           </section>

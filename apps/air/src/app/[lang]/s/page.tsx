@@ -56,7 +56,7 @@ async function SharedCard({ params, searchParams }: Props) {
   return (
     <DiscordCard
       accent={l.hex}
-      components={[image(imageOf(lang, q)), buttons([t("Отвори прогнозата", "Open the forecast"), `/s?${q}`], [t("Градовете днес", "Cities today"), "/gradove"])]}
+      components={[image(imageOf(lang, q)), buttons([t("Отвори прогнозата", "Open the forecast"), `/s?${q}`], [t("Градовете сега", "Cities now"), "/gradove"])]}
     />
   );
 }

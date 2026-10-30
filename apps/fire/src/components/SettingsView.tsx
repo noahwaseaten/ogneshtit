@@ -113,7 +113,7 @@ export function SettingsView() {
       <SettingsGroup title={t("За приложението", "About")}>
         <SettingsRow
           title={t("Направено от Камен", "Made by Noah")}
-          subtitle={t("Училищен проект за защита на гората, ПГЕА", "A school project on protecting the forest")}
+          subtitle={t("Училищен проект за защита на гората", "A school project on protecting the forest")}
           href="https://noahwaseaten.com/"
           external
         />

@@ -3,13 +3,16 @@ import { loadBackup } from "@shtit/core/backup";
 import { userAgent } from "@shtit/core/brand";
 import { distanceKm } from "@shtit/core/geo";
 import { PLACES } from "@shtit/core/data/places";
-import { bandOf, BANDS, median, windows, type CitiesResponse, type Hour, type PlaceResponse, type Sensors, type SensorPoint, type SensorsResponse } from "./air-types";
+import { bandOf, blend, BANDS, cleanSensors, median, windows, type CitiesResponse, type Hour, type PlaceResponse, type RawSensor, type Sensors, type SensorPoint, type SensorsResponse } from "./air-types";
 
 // Two sources that complement each other:
 //  - CAMS, the Copernicus atmosphere forecast for Europe (0.1°, about 10 km), through the Open-Meteo Air Quality API.
 //    It is a model that takes in the official measuring stations, and it can look ahead four days.
 //  - sensor.community, about a thousand citizen sensors across Bulgaria, read every 5 minutes. They measure the street
-//    you live on, but they are low-cost: in fog and high humidity they read too high. We use the median of several.
+//    you live on, but they are low-cost: in fog and high humidity they read too high, and some are broken or sit next
+//    to a chimney. We drop those (cleanSensors) and use the median of several.
+// "Now" is the sensors when there are enough nearby, else the forecast, and the forecast hours are made to agree with
+// it (blend), so the card, the hourly chart, the cities and the hub all show the same number.
 
 const CAMS = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
@@ -82,13 +85,13 @@ async function placeForecast(lat: number, lon: number) {
 
 type ScEntry = {
   timestamp: string;
-  location: { latitude: string; longitude: string; indoor: number };
+  location: { id: number; latitude: string; longitude: string; indoor: number };
   sensordatavalues: { value_type: string; value: string }[];
 };
 
 export const SENSORS_BACKUP = "sensors";
 
-/** Every outdoor particle sensor in Bulgaria with a reading from the last 30 minutes. */
+/** Every outdoor particle sensor in Bulgaria with a reading from the last 30 minutes that we can trust. */
 export async function getLiveSensors(): Promise<SensorsResponse> {
   "use cache";
   cacheLife({ stale: 120, revalidate: 300, expire: 3600 });
@@ -99,15 +102,21 @@ export async function getLiveSensors(): Promise<SensorsResponse> {
   if (!res.ok) throw new Error(`sensor.community ${res.status}`);
   const all = (await res.json()) as ScEntry[];
   const now = Date.now();
-  const byPlace = new Map<string, SensorPoint>();
+  const ageOf = (e: ScEntry) => Math.round((now - Date.parse(e.timestamp.replace(" ", "T") + "Z")) / 60000);
+  // A station sends its particle sensor and its humidity sensor as separate entries with the same location id.
+  const rh = new Map<number, number>();
+  for (const e of all) {
+    const h = Number(e.sensordatavalues.find((x) => x.value_type === "humidity")?.value);
+    if (h >= 0 && h <= 100 && ageOf(e) <= 30) rh.set(e.location.id, h);
+  }
+  const byPlace = new Map<string, RawSensor>();
   for (const e of all) {
     if (e.location.indoor) continue;
     const v = (k: string) => Number(e.sensordatavalues.find((x) => x.value_type === k)?.value);
     const pm10 = v("P1");
     const pm25 = v("P2");
-    // Broken or saturated sensors report zeros, negatives or absurd values; leave them out.
-    if (!(pm25 > 0 && pm25 < 1000 && pm10 > 0 && pm10 < 2000)) continue;
-    const age = Math.round((now - Date.parse(e.timestamp.replace(" ", "T") + "Z")) / 60000);
+    if (!Number.isFinite(pm25) || !Number.isFinite(pm10)) continue;
+    const age = ageOf(e);
     if (!(age >= 0 && age <= 30)) continue;
     const lat = Number(e.location.latitude);
     const lon = Number(e.location.longitude);
@@ -115,11 +124,13 @@ export async function getLiveSensors(): Promise<SensorsResponse> {
     // One reading per location (a station can list the same sensor twice): keep the newest.
     const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
     const prev = byPlace.get(key);
-    if (!prev || age < prev[4]) byPlace.set(key, [Math.round(lat * 1000) / 1000, Math.round(lon * 1000) / 1000, r1(pm25), r1(pm10), age]);
+    if (!prev || age < prev.age)
+      byPlace.set(key, { lat: Math.round(lat * 1000) / 1000, lon: Math.round(lon * 1000) / 1000, pm25: r1(pm25), pm10: r1(pm10), age, rh: rh.get(e.location.id) ?? null });
   }
-  const sensors = [...byPlace.values()];
-  if (sensors.length < 20) throw new Error(`sensor.community: only ${sensors.length} sensors`);
-  return { sensors, updated: new Date().toISOString() };
+  const { sensors, humid, odd } = cleanSensors([...byPlace.values()]);
+  // In thick fog most sensors are left out; that is correct, and the forecast takes over.
+  if (sensors.length + humid < 20) throw new Error(`sensor.community: only ${sensors.length} sensors`);
+  return { sensors, hidden: { humid, odd }, updated: new Date().toISOString() };
 }
 
 export async function getSensors(): Promise<SensorsResponse> {
@@ -162,16 +173,20 @@ export async function getPlace(lat: number, lon: number): Promise<PlaceResponse>
   if (sensors.status === "rejected") console.error("place sensors failed", sensors.reason);
   const now = sofiaHourNow();
   const all = fc.status === "fulfilled" ? fc.value : [];
-  const ahead = all.filter((h) => h.time >= now);
-  const { best, worst } = windows(all, now);
   const s = sensors.status === "fulfilled" ? sensors.value : null;
+  const measured = s ? sensorsNear(s.sensors, lat, lon, s.updated) : null;
+  const ahead = blend(
+    all.filter((h) => h.time >= now),
+    measured,
+  );
+  const { best, worst } = windows(ahead, now);
   return {
     now: ahead[0] ?? null,
     hours: ahead.slice(0, 48),
     best,
     worst,
-    days: daysOf(all, now),
-    sensors: s ? sensorsNear(s.sensors, lat, lon, s.updated) : null,
+    days: daysOf([...all.filter((h) => h.time < now), ...ahead], now),
+    sensors: measured,
     updated: new Date().toISOString(),
     backupFrom: s?.backupFrom,
   };
@@ -182,7 +197,10 @@ export async function getPlace(lat: number, lon: number): Promise<PlaceResponse>
 
 export const CITIES_BACKUP = "cities";
 
-export async function getLiveCities(): Promise<CitiesResponse> {
+/** The forecast for every oblast centre, as CAMS gives it (cached; this is what the backup keeps). */
+type CitiesForecast = { cities: { name: string; lat: number; lon: number; hours: Hour[] }[]; updated: string; backupFrom?: string };
+
+export async function getLiveCities(): Promise<CitiesForecast> {
   "use cache";
   cacheLife({ stale: 600, revalidate: 1800, expire: 12 * 3600 });
   const js = await fetchCams(
@@ -190,22 +208,30 @@ export async function getLiveCities(): Promise<CitiesResponse> {
     PLACES.map((p) => p.lon),
   );
   if (js.length !== PLACES.length) throw new Error("CAMS: wrong number of points");
-  const now = sofiaHourNow();
-  const cities = PLACES.map((p, i) => {
-    const hours = hoursOf(js[i]);
-    const today = daysOf(hours, now)[0];
-    return { name: p.name, lat: p.lat, lon: p.lon, now: hours.find((h) => h.time >= now) ?? null, dayMax: today?.band ?? "good", dayPm25: today?.pm25 ?? 0 };
-  });
-  return { cities, updated: new Date().toISOString() };
+  return { cities: PLACES.map((p, i) => ({ name: p.name, lat: p.lat, lon: p.lon, hours: hoursOf(js[i]) })), updated: new Date().toISOString() };
 }
 
+/** Each oblast centre now and today, worked out the same way as a place (sensors when there are enough, blended forecast). */
 export async function getCities(): Promise<CitiesResponse> {
+  let fc: CitiesForecast;
   try {
-    return await getLiveCities();
+    fc = await getLiveCities();
   } catch (e) {
-    const saved = await loadBackup<CitiesResponse>(CITIES_BACKUP);
-    if (!saved) throw e;
+    const saved = await loadBackup<CitiesForecast>(CITIES_BACKUP);
+    if (!saved || !saved.data.cities[0]?.hours) throw e;
     console.error("cities: serving backup from", saved.saved, e);
-    return { ...saved.data, backupFrom: saved.saved };
+    fc = { ...saved.data, backupFrom: saved.saved };
   }
+  const s = await getSensors().catch(() => null);
+  const now = sofiaHourNow();
+  const cities = fc.cities.map((c) => {
+    const measured = s ? sensorsNear(s.sensors, c.lat, c.lon, s.updated) : null;
+    const ahead = blend(
+      c.hours.filter((h) => h.time >= now),
+      measured,
+    );
+    const today = daysOf([...c.hours.filter((h) => h.time < now), ...ahead], now)[0];
+    return { name: c.name, lat: c.lat, lon: c.lon, now: ahead[0] ?? null, dayMax: today?.band ?? "good", dayPm25: today?.pm25 ?? 0, sensors: measured?.count ?? 0 };
+  });
+  return { cities, updated: fc.updated, backupFrom: fc.backupFrom };
 }

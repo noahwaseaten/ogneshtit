@@ -11,7 +11,7 @@ import { STORE } from "@shtit/core/client";
 import { useI18n } from "@shtit/core/i18n/client";
 import { placeName } from "@shtit/core/i18n/names";
 import { Segmented } from "@shtit/core/ui/Settings";
-import { BANDS, bandByKey, bandText, leadOf, type PlaceResponse } from "@/lib/air-types";
+import { BANDS, airHeadline, bandByKey, bandText, leadOf, type PlaceResponse } from "@/lib/air-types";
 
 // Who the advice is for. Remembered on the device, because a parent or someone with asthma always wants their own.
 const WHO = `${STORE}:who`;
@@ -76,8 +76,8 @@ export function AirCard({ data, loading, error, offline, onRetry, loc }: { data:
     <section aria-labelledby="air-title" className="enter">
       <div className="relative overflow-hidden rounded-[24px] p-5 lg:p-6" style={{ background: b.color, color: b.onColor }}>
         <div className="flex items-start justify-between gap-3">
-          <p className="text-[15px] font-semibold opacity-90">{t(`Въздухът сега ${place}`, `The air now ${place}`)}</p>
-          <ShareButton text={t(`Въздухът сега ${place}: ${text.label.toLowerCase()}.`, `The air now ${place}: ${text.label.toLowerCase()}.`)} loc={loc} />
+          <p className="text-[15px] font-semibold opacity-90">{t(`Качество на въздуха сега ${place}`, `Air quality now ${place}`)}</p>
+          <ShareButton text={t(`${airHeadline(b, "bg")} сега ${place}.`, `${airHeadline(b, "en")} now ${place}.`)} loc={loc} />
         </div>
         <h2 id="air-title" className="pt-0.5 font-display text-[44px] font-bold leading-[1.05] tracking-[-0.02em] lg:text-[52px]">
           {text.label}
@@ -144,9 +144,10 @@ export function AirCard({ data, loading, error, offline, onRetry, loc }: { data:
                 въглища. Съветите под картата са на EEA.
               </p>
               <p>
-                „Сега“ е средното (медианата) от гражданските датчици на sensor.community наоколо, ако са поне 3. Те мерят улицата ви,
-                но при мъгла и висока влажност показват повече от истинското. Прогнозата е от CAMS, атмосферната служба на Copernicus,
-                която ползва и държавните станции.
+                „Сега“ е средното (медианата) от гражданските датчици на sensor.community наоколо, ако са поне 3. Не ползваме датчици
+                при влажност от 90% нагоре (тогава броят мъглата за прах), блокирали датчици и такива, които показват многократно
+                повече от съседите си. Прогнозата е от CAMS, атмосферната служба на Copernicus, която ползва и държавните станции.
+                Следващите часове са прогнозата, сверена с измереното сега.
               </p>
               {measured && data.now && (
                 <p>
@@ -161,9 +162,10 @@ export function AirCard({ data, loading, error, offline, onRetry, loc }: { data:
                 (PM10) particles. In a Bulgarian winter they come mostly from heating with wood and coal. The advice above is the EEA&apos;s.
               </p>
               <p>
-                &quot;Now&quot; is the median of the sensor.community citizen sensors nearby, when there are at least 3. They measure your
-                street, but in fog and high humidity they read too high. The forecast is CAMS, the Copernicus atmosphere service, which
-                also takes in the official stations.
+                &quot;Now&quot; is the median of the sensor.community citizen sensors nearby, when there are at least 3. We leave out sensors
+                at 90% humidity or more (they count fog as dust), stuck sensors, and ones reading many times more than their
+                neighbours. The forecast is CAMS, the Copernicus atmosphere service, which also takes in the official stations. The
+                hours ahead are the forecast, matched to what is measured now.
               </p>
               {measured && data.now && (
                 <p>
