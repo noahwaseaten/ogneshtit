@@ -1,0 +1,34 @@
+{
+  "name": "@shtit/fire",
+  "version": "2.0.0",
+  "private": true,
+  "description": "ОгнеЩит: опасност от горски пожар днес, пожари наблизо и сигнали за незаконна сеч в България.",
+  "license": "MIT",
+  "homepage": "https://fire.noahwaseaten.com",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typegen": "next typegen",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint",
+    "test": "npm run test:fwi && npm run test:fires && npm run test:passes",
+    "test:fwi": "tsx scripts/test-fwi.ts",
+    "test:fires": "tsx scripts/test-fires.ts",
+    "test:passes": "tsx scripts/test-passes.ts",
+    "orbits": "node scripts/orbits.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/onest": "5.3.1",
+    "@shtit/core": "*",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/blob": "2.8.2",
+    "lucide-react": "1.62.0",
+    "next": "16.4.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "satellite.js": "7.1.0",
+    "vaul": "1.1.2",
+    "web-push": "3.6.7"
+  }
+}

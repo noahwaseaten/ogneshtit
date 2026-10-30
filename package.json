@@ -1,54 +1,39 @@
 {
-  "name": "ogneshtit",
-  "version": "1.0.0",
+  "name": "shtit",
+  "version": "2.0.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "test:fwi": "tsx scripts/test-fwi.ts",
-    "test:fires": "tsx scripts/test-fires.ts",
-    "test:passes": "tsx scripts/test-passes.ts",
-    "typecheck": "tsc --noEmit",
-    "map": "node scripts/oblasts.mjs",
-    "border": "node scripts/bulgaria.mjs",
-    "orbits": "node scripts/orbits.mjs"
+  "description": "Щит / Shield: ОгнеЩит (forest fires) and ВодоЩит (floods), free apps for people in Bulgaria.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/noahwaseaten/ogneshtit.git"
   },
-  "dependencies": {
-    "@fontsource-variable/onest": "5.3.1",
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/blob": "2.8.2",
-    "lucide-react": "1.62.0",
-    "next": "16.4.3",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "satellite.js": "7.1.0",
-    "vaul": "1.1.2",
-    "web-push": "3.6.7"
+  "homepage": "https://shield.noahwaseaten.com",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:fire": "npm run dev -w @shtit/fire",
+    "dev:flood": "npm run dev -w @shtit/flood",
+    "dev:hub": "npm run dev -w @shtit/hub",
+    "typegen": "npm run typegen --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "20.19.43",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@types/topojson-client": "3.1.5",
-    "@types/web-push": "3.6.4",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.3",
     "tailwindcss": "4.3.3",
-    "topojson-client": "3.1.0",
     "tsx": "4.23.15",
-    "typescript": "5.9.3",
-    "world-atlas": "2.0.2"
+    "typescript": "5.9.3"
   },
-  "description": "ОгнеЩит: опасност от горски пожар днес, пожари наблизо и сигнали за незаконна сеч в България.",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/noahwaseaten/ogneshtit.git"
-  },
-  "homepage": "https://ogneshtit.noahwaseaten.com",
   "engines": {
     "node": ">=20.9"
   }

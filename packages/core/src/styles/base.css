@@ -1,0 +1,201 @@
+/*
+  Shared styles for every Щит app. Each app imports Tailwind, then this file, and defines its own colour
+  tokens on :root (light), under prefers-color-scheme: dark and under [data-theme="dark"].
+  Tokens every app defines: --surface --card --raised --content --muted --line --accent --accent-content
+  --ember (errors and danger text) --mark (centre of the emblem) --tonal --land --land-line --lift and the
+  danger scale --d-*. Shared ones (--ease-out, --tabbar-h) are below.
+*/
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --tabbar-h: 64px;
+}
+
+/* Bright-sunlight mode: stronger text and borders. Also follows the OS setting. */
+:root[data-contrast="high"] {
+  --muted: var(--content);
+  --line: oklch(0 0 0 / 0.35);
+}
+@media (prefers-contrast: more) {
+  :root {
+    --muted: var(--content);
+  }
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-raised: var(--raised);
+  --color-tonal: var(--tonal);
+  --color-land: var(--land);
+  --color-content: var(--content);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-content: var(--accent-content);
+  --color-ember: var(--ember);
+  --font-display: "Onest Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  /* The page keeps room for the scrollbar at all times, so nothing shifts when a page becomes long enough to
+     scroll. The room is painted with the page colour and the track is see-through, so only a thin thumb
+     in the theme's own tone shows. */
+  background: var(--surface);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--content) 22%, transparent) transparent;
+}
+/* Safari and older Chromium, which ignore scrollbar-color. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--content) 22%, transparent) padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--content) 38%, transparent);
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+body {
+  background: var(--surface);
+  color: var(--content);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* Hover and press tint, the same everywhere. Drawn as an inset shadow so it sits on top of whatever
+   background the element already has (cards, chips, selected states) and follows its exact radius.
+   Rows inside a grouped card fill edge to edge and the card (overflow-hidden) clips the corners;
+   rows in a sheet use -mx-3 px-3 rounded-xl so the tint is concentric with the sheet's padding. */
+:root {
+  --hover: color-mix(in oklab, var(--content) 8%, transparent);
+  --press: color-mix(in oklab, var(--content) 13%, transparent);
+}
+
+/* Press feedback for anything tappable. */
+.pressable {
+  transition: scale 160ms var(--ease-out), background-color 150ms ease, color 150ms ease;
+}
+.pressable:active {
+  scale: 0.96;
+}
+
+.hover-fill {
+  transition: box-shadow 150ms ease, scale 160ms var(--ease-out), color 150ms ease, background-color 150ms ease;
+}
+@media (hover: hover) {
+  .hover-fill:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 100vmax var(--hover);
+  }
+}
+.hover-fill:active:not(:disabled) {
+  box-shadow: inset 0 0 0 100vmax var(--press);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Content fades in once; never on frequently repeated interactions. */
+.enter {
+  transition: opacity 240ms var(--ease-out), translate 240ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+/* Bars that grow from the bottom once, with a slight overshoot (Material 3 expressive spring). */
+.rise {
+  transform-origin: bottom;
+  transition: scale 520ms cubic-bezier(0.34, 1.36, 0.4, 1);
+  @starting-style {
+    scale: 1 0.2;
+  }
+}
+
+/* A progress bar that fills once when it appears (scaleX, left origin). */
+.fill {
+  transform: scaleX(var(--p, 1));
+  transition: transform 520ms var(--ease-out);
+  @starting-style {
+    transform: scaleX(0);
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--line), transparent, var(--line));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable:active {
+    scale: 1;
+  }
+  .enter {
+    translate: 0 0;
+    @starting-style {
+      translate: 0 0;
+    }
+  }
+  .skeleton {
+    animation: none;
+  }
+  .rise,
+  .fill {
+    transition: none;
+  }
+}
+
+/* Icon swaps: cross-fade with a little scale and blur instead of a hard cut. */
+.swap {
+  transition: opacity 180ms var(--ease-out), scale 180ms var(--ease-out), filter 180ms var(--ease-out);
+}
+.swap[data-hidden="true"] {
+  opacity: 0;
+  scale: 0.25;
+  filter: blur(4px);
+}
+
+/* Switching theme swaps every colour at once; transitions would show half-switched patches. */
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+

@@ -1,0 +1,32 @@
+{
+  "name": "@shtit/core",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Shared shell, language, theme, map and data helpers for the Щит apps.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "map": "node scripts/oblasts.mjs",
+    "border": "node scripts/bulgaria.mjs"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/blob": "2.8.2",
+    "lucide-react": "1.62.0",
+    "next": "16.4.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "vaul": "1.1.2",
+    "web-push": "3.6.7"
+  },
+  "devDependencies": {
+    "@types/topojson-client": "3.1.5",
+    "@types/web-push": "3.6.4",
+    "topojson-client": "3.1.0",
+    "world-atlas": "2.0.2"
+  }
+}
