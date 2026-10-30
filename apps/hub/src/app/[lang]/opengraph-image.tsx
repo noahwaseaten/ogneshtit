@@ -12,5 +12,5 @@ export function generateStaticParams() {
 export default async function OgImage({ params }: { params: Promise<{ lang: string }> }) {
   const lang = await langFrom(params);
   const t = pick(lang);
-  return brandImage("hub", lang, t("Огън и вода, днес, за вашето място", "Fire and water, today, for your place"), t("ОгнеЩит за горските пожари, ВодоЩит за наводненията", "Fire Shield for forest fires, Flood Shield for floods"));
+  return brandImage("hub", lang, t("Въздух, вода и огън, днес, за вашето място", "Air, water and fire, today, for your place"), t("ВъздухоЩит за смога, ВодоЩит за наводненията, ОгнеЩит за пожарите", "Air Shield for smog, Flood Shield for floods, Fire Shield for fires"));
 }

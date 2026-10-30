@@ -8,12 +8,15 @@ const FLAME = "M16 9.2c.9 2.6 4.1 4.3 4.1 8.1a4.1 4.1 0 1 1-8.2 0c0-1.9 1-3 1.9-
 // A drop of meltwater with a snowflake inside: winter water.
 const DROP = "M16 9c1.7 2.7 4.4 5.4 4.4 8.4a4.4 4.4 0 1 1-8.8 0c0-3 2.7-5.7 4.4-8.4Z";
 const FLAKE = "M16 15.3v4.6M14 16.45l4 2.3M14 18.75l4-2.3";
+// Winter air: three gusts of wind, the middle one curling back like a breath in the cold.
+const GUSTS = "M10.6 13.4h7.2a2.1 2.1 0 1 0-2.1-2.1M10.6 17h10.1a2.3 2.3 0 1 1-2.3 2.3M10.6 20.6h5.4";
 
 /** The centre as plain elements (Satori, which draws the images, allows nothing else inside <svg>). */
 function centre(app: AppId, mark: string, cut: string) {
   if (app === "fire") return [<path key="f" d={FLAME} fill={mark} />];
   if (app === "flood")
     return [<path key="d" d={DROP} fill={mark} />, <path key="s" d={FLAKE} stroke={cut} strokeWidth={0.85} strokeLinecap="round" fill="none" />];
+  if (app === "air") return [<path key="g" d={GUSTS} stroke={mark} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" fill="none" />];
   // The hub carries both, side by side (each scaled to 82% around the centre, then moved 4.4 units out).
   return [
     <path key="f" d={FLAME} fill={BRANDS.fire.mark} transform="translate(-1.52 4.66) scale(0.82)" />,

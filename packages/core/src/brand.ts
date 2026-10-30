@@ -3,7 +3,7 @@ import type { Lang } from "./i18n/lang";
 // The Щит family: one emblem (a shield) with a different centre for each danger, the same look and the
 // same "…Щит" name. Each app lives on its own subdomain and installs on its own; the hub links them.
 
-export type AppId = "fire" | "flood" | "hub";
+export type AppId = "fire" | "flood" | "air" | "hub";
 
 export type Brand = {
   id: AppId;
@@ -44,6 +44,16 @@ export const BRANDS: Record<AppId, Brand> = {
     shield: "#f1f5f9",
     surface: { light: "#eef3f7", dark: "#0c1218" },
   },
+  air: {
+    id: "air",
+    name: { bg: "ВъздухоЩит", en: "Air Shield" },
+    tagline: { bg: ["Въздух и смог", "Може ли да излезете, кога да проветрите"], en: ["Air and smog", "Is it OK to go out, when to air the room"] },
+    url: url(process.env.NEXT_PUBLIC_URL_AIR, "https://air.noahwaseaten.com"),
+    color: "#0d5e6b",
+    mark: "#5cc4d1",
+    shield: "#eff6f7",
+    surface: { light: "#edf4f5", dark: "#0b1416" },
+  },
   hub: {
     id: "hub",
     name: { bg: "Щит", en: "Shield" },
@@ -57,14 +67,20 @@ export const BRANDS: Record<AppId, Brand> = {
 };
 
 /** The apps a person can install (the hub is a front door, not a tool). */
-export const TOOLS: AppId[] = ["fire", "flood"];
+export const TOOLS: AppId[] = ["air", "flood", "fire"];
+
+/** Every app, in the order the family is listed. */
+export const ALL_APPS: AppId[] = ["air", "flood", "fire", "hub"];
 
 export const REPO = "https://github.com/noahwaseaten/ogneshtit";
 
 /** Sent with server requests to public sources, so they know who is asking. */
 export const userAgent = (app: AppId) => `Shtit-${app}/2.0 (+${REPO})`;
 
-/** Which app the hub puts first: fire in the warm half of the year (April to September), floods in the cold half. */
-export function seasonFirst(month: number): AppId {
-  return month >= 4 && month <= 9 ? "fire" : "flood";
+/**
+ * The tools in the order the hub shows them this month. Fire leads in the warm half of the year (April to September);
+ * air leads in the cold half, when home heating fills Bulgarian towns with smoke.
+ */
+export function seasonOrder(month: number): AppId[] {
+  return month >= 4 && month <= 9 ? ["fire", "flood", "air"] : ["air", "flood", "fire"];
 }

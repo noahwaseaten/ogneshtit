@@ -5,7 +5,7 @@ import { ArrowUpRight, Download, Moon, Monitor, Phone, Sun } from "lucide-react"
 import { useJson, useLocation, useTheme } from "@shtit/core/client";
 import { setLanguage, useI18n } from "@shtit/core/i18n/client";
 import { localeOf } from "@shtit/core/i18n/lang";
-import { BRANDS, REPO, TOOLS, seasonFirst, type AppId } from "@shtit/core/brand";
+import { BRANDS, REPO, TOOLS, seasonOrder, type AppId } from "@shtit/core/brand";
 import { Emblem, EmblemTile } from "@shtit/core/emblem";
 import type { AppSummary } from "@shtit/core/summary";
 import { LocationPicker } from "@shtit/core/ui/LocationPicker";
@@ -23,9 +23,10 @@ const fmt = (lang: "bg" | "en") => () => new Intl.DateTimeFormat(localeOf(lang),
 export function Hub() {
   const { t, lang } = useI18n();
   const { loc } = useLocation();
-  const first = useSyncExternalStore(noop, () => seasonFirst(month()), () => "flood" as AppId);
+  // The season's order is worked out on the device, so a prerendered page never shows last month's order.
+  const lead = useSyncExternalStore(noop, () => seasonOrder(month())[0], () => TOOLS[0]);
   const date = useSyncExternalStore(noop, fmt(lang), () => "");
-  const order = first === "fire" ? TOOLS : [...TOOLS].reverse();
+  const order = seasonOrder(lead === "fire" ? 6 : 12);
 
   return (
     <div className="flex flex-col gap-10">
@@ -39,12 +40,12 @@ export function Hub() {
 
       <section aria-labelledby="hero" className="flex flex-col gap-3">
         <h1 id="hero" className="max-w-[18ch] font-display text-[36px] font-bold leading-[1.08] tracking-[-0.02em] lg:text-[52px]">
-          {t("Огън и вода, днес, за вашето място", "Fire and water, today, for your place")}
+          {t("Въздух, вода и огън, днес, за вашето място", "Air, water and fire, today, for your place")}
         </h1>
         <p className="max-w-[56ch] text-[17px] leading-snug text-muted">
           {t(
-            "Две безплатни приложения за опасностите в България. Всяко работи самостоятелно и се инсталира отделно, така че можете да ползвате само това, което ви трябва.",
-            "Two free apps for natural dangers in Bulgaria. Each one works on its own and installs separately, so you can use only the one you need.",
+            "Три безплатни приложения за опасностите в България: въздух, вода и огън. Всяко работи самостоятелно и се инсталира отделно, така че ползвате само това, което ви трябва.",
+            "Three free apps for dangers in Bulgaria: air, water and fire. Each one works on its own and installs separately, so you use only the one you need.",
           )}
         </p>
         <div className="flex flex-col gap-0.5 pt-2">
@@ -53,9 +54,9 @@ export function Hub() {
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {order.map((a) => (
-          <AppCard key={a} app={a} lat={loc.lat} lon={loc.lon} first={a === first} />
+          <AppCard key={a} app={a} lat={loc.lat} lon={loc.lon} first={a === lead} />
         ))}
       </div>
 
@@ -67,15 +68,15 @@ export function Hub() {
           [
             t("Всяко приложение е отделно", "Each app stands alone"),
             t(
-              "ОгнеЩит и ВодоЩит имат свой адрес, свои известия и работят без интернет. Инсталирайте едното, другото или двете.",
-              "Fire Shield and Flood Shield each have their own address and alerts, and work offline. Install one, the other or both.",
+              "ВъздухоЩит, ВодоЩит и ОгнеЩит имат свой адрес, свои известия и работят без интернет. Инсталирайте само това, което ви трябва.",
+              "Air Shield, Flood Shield and Fire Shield each have their own address and alerts, and work offline. Install only what you need.",
             ),
           ],
           [
             t("Само отворени източници", "Open sources only"),
             t(
-              "Прогнозите са от Copernicus (GloFAS), Open-Meteo, NASA FIRMS и НИМХ, а статистиката от държавни агенции. Всяко число има източник.",
-              "Forecasts come from Copernicus (GloFAS), Open-Meteo, NASA FIRMS and NIMH, statistics from state agencies. Every number has a source.",
+              "Прогнозите са от Copernicus (CAMS и GloFAS), Open-Meteo, NASA FIRMS и НИМХ, измерванията от граждански датчици и държавни агенции. Всяко число има източник.",
+              "Forecasts come from Copernicus (CAMS and GloFAS), Open-Meteo, NASA FIRMS and NIMH, measurements from citizen sensors and state agencies. Every number has a source.",
             ),
           ],
           [

@@ -11,10 +11,10 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   const { lang } = await params;
   if (!isLang(lang)) return {};
   return appMetadata("hub", lang, {
-    title: ["Щит: огън и вода, днес, за вашето място", "Shield: fire and water, today, for your place"],
+    title: ["Щит: въздух, вода и огън, днес, за вашето място", "Shield: air, water and fire, today, for your place"],
     description: [
-      "Безплатни приложения за опасностите в България: ОгнеЩит за горските пожари и ВодоЩит за наводненията. Всяко работи самостоятелно.",
-      "Free apps for natural dangers in Bulgaria: Fire Shield for forest fires and Flood Shield for floods. Each works on its own.",
+      "Безплатни приложения за опасностите в България: ВъздухоЩит за смога, ВодоЩит за наводненията и ОгнеЩит за горските пожари. Всяко работи самостоятелно.",
+      "Free apps for dangers in Bulgaria: Air Shield for smog, Flood Shield for floods and Fire Shield for forest fires. Each works on its own.",
     ],
   });
 }

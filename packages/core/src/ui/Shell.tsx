@@ -9,7 +9,7 @@ import { Sheet } from "./Sheet";
 import { useBrand } from "./Brand";
 import { useTheme, type ThemeChoice } from "../client";
 import { useI18n } from "../i18n/client";
-import { BRANDS, type AppId } from "../brand";
+import { ALL_APPS, BRANDS, type AppId } from "../brand";
 import { Emblem } from "../emblem";
 
 export type NavItem = { href: string; label: readonly [string, string]; Icon: LucideIcon };
@@ -56,7 +56,7 @@ export function Sidebar({ nav }: { nav: readonly NavItem[] }) {
   const path = usePath();
   const brand = useBrand();
   const { t, tp, lang } = useI18n();
-  const others = (["fire", "flood", "hub"] as const).filter((a) => a !== brand.id);
+  const others = ALL_APPS.filter((a) => a !== brand.id);
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col border-r border-line bg-card/60 px-4 py-6 lg:flex">
       <Link href="/" className="flex items-center gap-2.5 rounded-xl px-2 py-1">
@@ -183,7 +183,7 @@ export function FamilyList({ current, lang }: { current: AppId; lang: "bg" | "en
   const { t } = useI18n();
   return (
     <ul className="-mx-3 flex flex-col">
-      {(["fire", "flood", "hub"] as const).map((a) => {
+      {ALL_APPS.map((a) => {
         const b = BRANDS[a];
         const here = a === current;
         const body = (

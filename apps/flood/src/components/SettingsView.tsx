@@ -98,7 +98,7 @@ export function SettingsView() {
       <SettingsGroup title={t("За приложението", "About")}>
         <SettingsRow
           title={t("Направено от Камен", "Made by Noah")}
-          subtitle={t("Част от Щит: ОгнеЩит за пожарите, ВодоЩит за наводненията", "Part of Shield: Fire Shield for fires, Flood Shield for floods")}
+          subtitle={t("Част от Щит: въздух, вода и огън", "Part of Shield: air, water and fire")}
           href="https://noahwaseaten.com/"
           external
         />
@@ -125,8 +125,8 @@ function SourceState({ s, loading }: { s?: SourceStatus; loading: boolean }) {
     : s.mode === "backup"
       ? t(`не отговаря; ползваме копие от ${ago(s.backupFrom ?? when ?? "")}`, `not responding; using a copy from ${ago(s.backupFrom ?? when ?? "")}`)
       : when
-            ? t(`обновено ${ago(when)}`, `updated ${ago(when)}`)
-            : t("работи", "working");
+        ? t(`обновено ${ago(when)}`, `updated ${ago(when)}`)
+        : t("работи", "working");
   return (
     <span className="flex items-start gap-1.5 pt-1 text-[13px] tabular-nums text-content">
       <span className="mt-[5px] size-2 shrink-0 rounded-full" style={{ background: color }} aria-hidden />
