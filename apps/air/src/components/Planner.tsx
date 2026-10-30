@@ -1,6 +1,7 @@
 "use client";
 
-import { Footprints, PanelTopClose } from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Footprints, PanelTopClose } from "lucide-react";
 import { useI18n } from "@shtit/core/i18n/client";
 import { bandByKey, bandText, hhmm, type Hour, type PlaceResponse, type Window } from "@/lib/air-types";
 
@@ -18,6 +19,7 @@ export function BandChip({ band, size = "md" }: { band: string; size?: "sm" | "m
 /**
  * When to go out and when to keep the windows shut: the cleanest and dirtiest three daytime hours ahead, then the next
  * 48 hours as a ribbon of bars (height = PM2.5, colour = band), the way a weather app shows hourly temperature.
+ * The first bar is the number on the card: the forecast is matched to the sensors (blend in air-types).
  */
 export function Planner({ data }: { data: PlaceResponse }) {
   const { t, lang, weekday } = useI18n();
@@ -60,8 +62,7 @@ export function Planner({ data }: { data: PlaceResponse }) {
           )}
         </div>
       )}
-      <Ribbon hours={data.hours} />
-      <Gap data={data} />
+      <Ribbon hours={data.hours} measured={!!data.sensors?.band} />
       {data.days.length > 1 && <Days days={data.days} />}
     </section>
   );
@@ -86,32 +87,50 @@ function Tile({ icon, title, when, whenEn, day, band, note }: { icon: React.Reac
 }
 
 /**
- * When the sensors nearby and the forecast disagree, say so and say what each is good for, instead of leaving people to
- * wonder why the card is cyan and the bars are yellow.
+ * 48 hours of bars. Scrolls sideways: by swiping on a phone, and with the arrow buttons or by dragging with a mouse on a
+ * computer. Each new day is labelled. Numbers are in the labels for screen readers.
  */
-function Gap({ data }: { data: PlaceResponse }) {
-  const { t, nf } = useI18n();
-  const s = data.sensors;
-  const now = data.hours[0];
-  if (!s?.band || s.pm25 == null || !now || s.band === now.band) return null;
-  return (
-    <p className="px-1 text-[14px] leading-snug text-muted">
-      {t(
-        `Сега датчиците наоколо мерят ${nf(s.pm25)} µg/m³, а прогнозата дава ${nf(now.pm25)}. Гледайте прогнозата за това кога ще е по-чисто или по-мръсно, а датчиците за това какво е сега.`,
-        `Right now the sensors nearby measure ${nf(s.pm25)} µg/m³ and the forecast says ${nf(now.pm25)}. Use the forecast for when it gets cleaner or dirtier, and the sensors for what it is now.`,
-      )}
-    </p>
-  );
-}
-
-/** 48 hours of bars. Scrolls sideways on a phone; each new day is labelled. Numbers are in the labels for screen readers. */
-function Ribbon({ hours }: { hours: Hour[] }) {
+function Ribbon({ hours, measured }: { hours: Hour[]; measured: boolean }) {
   const { t, nf, weekday } = useI18n();
   const max = Math.max(30, ...hours.map((h) => h.pm25));
+  const list = useRef<HTMLOListElement>(null);
+  const [edge, setEdge] = useState<{ start: boolean; end: boolean }>({ start: true, end: false });
+  const onScroll = () => {
+    const el = list.current;
+    if (el) setEdge({ start: el.scrollLeft < 4, end: el.scrollLeft + el.clientWidth > el.scrollWidth - 4 });
+  };
+  const page = (dir: 1 | -1) => list.current?.scrollBy({ left: dir * list.current.clientWidth * 0.8, behavior: "smooth" });
+  // Drag to scroll with a mouse; touch keeps the browser's own swipe.
+  const drag = useRef<{ x: number; left: number } | null>(null);
   return (
     <div className="min-w-0 rounded-[20px] bg-card py-3">
-      <p className="px-4 text-[14px] font-medium text-muted">{t("Фини прахови частици по часове, µg/m³", "Fine particles hour by hour, µg/m³")}</p>
-      <ol className="hours no-scrollbar mt-2 flex gap-1 overflow-x-auto px-4 pb-1" aria-label={t("Следващите 48 часа", "The next 48 hours")}>
+      <div className="flex items-center gap-2 px-4">
+        <p className="flex-1 text-[14px] font-medium text-muted">{t("Фини прахови частици по часове, µg/m³", "Fine particles hour by hour, µg/m³")}</p>
+        <div className="hidden gap-1 [@media(pointer:fine)]:flex">
+          <button onClick={() => page(-1)} disabled={edge.start} aria-label={t("По-рано", "Earlier")} className="pressable hover-fill grid size-9 place-items-center rounded-full bg-line disabled:opacity-35">
+            <ChevronLeft size={18} strokeWidth={2} aria-hidden />
+          </button>
+          <button onClick={() => page(1)} disabled={edge.end} aria-label={t("По-късно", "Later")} className="pressable hover-fill grid size-9 place-items-center rounded-full bg-line disabled:opacity-35">
+            <ChevronRight size={18} strokeWidth={2} aria-hidden />
+          </button>
+        </div>
+      </div>
+      <ol
+        ref={list}
+        onScroll={onScroll}
+        onPointerDown={(e) => {
+          if (e.pointerType !== "mouse" || !list.current) return;
+          drag.current = { x: e.clientX, left: list.current.scrollLeft };
+        }}
+        onPointerMove={(e) => {
+          if (!drag.current || !list.current) return;
+          list.current.scrollLeft = drag.current.left - (e.clientX - drag.current.x);
+        }}
+        onPointerUp={() => (drag.current = null)}
+        onPointerLeave={() => (drag.current = null)}
+        className="hours no-scrollbar mt-2 flex cursor-grab select-none gap-1 overflow-x-auto px-4 pb-1 active:cursor-grabbing"
+        aria-label={t("Следващите 48 часа", "The next 48 hours")}
+      >
         {hours.map((h, i) => {
           const b = bandByKey(h.band);
           const hr = Number(h.time.slice(11, 13));
@@ -133,7 +152,11 @@ function Ribbon({ hours }: { hours: Hour[] }) {
           );
         })}
       </ol>
-      <p className="px-4 pt-1 text-[12px] text-muted">{t("Прогноза CAMS (Copernicus).", "CAMS forecast (Copernicus).")}</p>
+      <p className="px-4 pt-1 text-[12px] leading-snug text-muted">
+        {measured
+          ? t("Сега: датчиците наоколо. След това прогнозата на CAMS, сверена с тях.", "Now: the sensors nearby. After that the CAMS forecast, matched to them.")
+          : t("Прогноза CAMS (Copernicus).", "CAMS forecast (Copernicus).")}
+      </p>
     </div>
   );
 }

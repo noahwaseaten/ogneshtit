@@ -67,12 +67,12 @@ export default async function Pomogni({ params }: Props) {
               "Bulgaria has the EU's highest death rate linked to fine particles: 158 premature deaths per 100,000 people.",
             )}
           </p>
-          <p className="flex flex-wrap gap-x-4 pt-3 text-[14px] font-medium">
-            <a href={EEA_BG} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 underline underline-offset-4">
+          <p className="flex flex-wrap gap-2 pt-4">
+            <a href={EEA_BG} target="_blank" rel="noreferrer" className="pressable inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/15 px-4 text-[14px] font-semibold">
               {t("EEA за България", "EEA on Bulgaria")}
               <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
             </a>
-            <a href={EURONEWS} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 underline underline-offset-4">
+            <a href={EURONEWS} target="_blank" rel="noreferrer" className="pressable inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/35 px-4 text-[14px] font-semibold">
               {t("Euronews по данни на EEA", "Euronews on EEA data")}
               <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
             </a>
@@ -92,7 +92,7 @@ export default async function Pomogni({ params }: Props) {
               </li>
             ))}
           </ul>
-          <a href={EEA_INDEX} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-accent">
+          <a href={EEA_INDEX} target="_blank" rel="noreferrer" className="pressable mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-4 text-[15px] font-semibold">
             {t("Европейският индекс за качество на въздуха", "The European Air Quality Index")}
             <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
           </a>
@@ -109,7 +109,7 @@ export default async function Pomogni({ params }: Props) {
               "Plastic, tyres and rubbish in a stove pollute the air of the whole street. Report it to the municipality's ecology department, or to the regional environment inspectorate (РИОСВ) through the environment ministry's green phone.",
             )}
           </p>
-          <a href={MOEW_GREEN} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-accent">
+          <a href={MOEW_GREEN} target="_blank" rel="noreferrer" className="pressable mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-tonal px-4 text-[15px] font-semibold">
             {t("Зелените телефони на МОСВ и РИОСВ", "Green phones of МОСВ and РИОСВ (in Bulgarian)")}
             <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
           </a>

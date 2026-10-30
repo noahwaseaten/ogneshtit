@@ -5,7 +5,7 @@ import { formatters } from "@shtit/core/i18n/format";
 import { roundKm } from "@shtit/core/alerts";
 import { summaryHeaders, type AppSummary } from "@shtit/core/summary";
 import { getPlace } from "@/lib/air";
-import { BANDS, bandByKey, bandText, hhmm } from "@/lib/air-types";
+import { BANDS, bandByKey, airHeadline, bandText, hhmm } from "@/lib/air-types";
 
 /** The air now at a place, worded for the hub. Measured by sensors nearby when there are enough, else the forecast. */
 export async function GET(req: NextRequest) {
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const body: AppSummary = {
       app: "air",
       level: { key: b.key, index: b.index, of: BANDS.length, label, hex: b.hex, onColor: b.onColor },
-      headline: t(`Въздухът сега: ${label.toLowerCase()}`, `Air now: ${label.toLowerCase()}`),
+      headline: `${airHeadline(b, lang)} ${t("сега", "now")}`,
       detail:
         t(`ФПЧ2,5 ${nf(pm25)} µg/m³`, `PM2.5 ${nf(pm25)} µg/m³`) +
         (measured ? t(`, ${measured.count} датчика наоколо`, `, ${measured.count} sensors nearby`) : t(", по прогноза", ", forecast")) +

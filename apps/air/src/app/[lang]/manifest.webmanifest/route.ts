@@ -12,7 +12,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/[lang]/manifest.web
   return manifestResponse("air", lang, ["Какъв е въздухът днес и кога е най-чист.", "How clean the air is today and when it is cleanest."], {
     shortcuts: [
       { name: t("Карта на датчиците", "Sensor map"), url: "/karta", icons: icon },
-      { name: t("Градовете днес", "Cities today"), url: "/gradove", icons: icon },
+      { name: t("Градовете сега", "Cities now"), url: "/gradove", icons: icon },
       { name: t("Как да се пазя", "How to protect myself"), url: "/pomogni", icons: icon },
     ],
   });

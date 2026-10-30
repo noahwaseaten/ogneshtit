@@ -7,6 +7,8 @@
 // people with asthma, heart or lung disease), in plain words.
 // Source: https://airindex.eea.europa.eu/AQI/index.html
 
+import { distanceKm } from "@shtit/core/geo";
+
 export type BandKey = "good" | "fair" | "moderate" | "poor" | "verypoor" | "extreme";
 
 export type Band = {
@@ -117,6 +119,8 @@ export const BANDS: Band[] = [
 
 export const bandByKey = (k: string) => BANDS.find((b) => b.key === k) ?? BANDS[0];
 export const bandText = (b: Band, lang: "bg" | "en") => b[lang];
+/** "Добро качество на въздуха", worded like the other apps' "Ниска опасност от ..." headlines. */
+export const airHeadline = (b: Band, lang: "bg" | "en") => (lang === "bg" ? `${b.bg.label} качество на въздуха` : `${b.en.label} air quality`);
 
 /** The band for one pollutant's hourly value. Values on a boundary belong to the lower band, as in the EEA table. */
 const bandFor = (v: number, limit: (b: Band) => number) => BANDS.find((b) => v <= limit(b) + 0.49) ?? BANDS[BANDS.length - 1];
@@ -164,12 +168,73 @@ export type PlaceResponse = {
   backupFrom?: string;
 };
 
-export type City = { name: string; lat: number; lon: number; now: Hour | null; dayMax: BandKey; dayPm25: number };
+/** An oblast centre: `now` is measured when `sensors` (how many nearby) is above 0, else forecast. */
+export type City = { name: string; lat: number; lon: number; now: Hour | null; dayMax: BandKey; dayPm25: number; sensors: number };
 export type CitiesResponse = { cities: City[]; updated: string; backupFrom?: string };
 
 /** One citizen sensor: [lat, lon, PM2.5, PM10, minutes since the reading]. */
 export type SensorPoint = [number, number, number, number, number];
-export type SensorsResponse = { sensors: SensorPoint[]; updated: string; backupFrom?: string };
+export type SensorsResponse = {
+  sensors: SensorPoint[];
+  /** Left out: readings taken in air at 90% humidity or more, and readings that cannot be right (see cleanSensors). */
+  hidden?: { humid: number; odd: number };
+  updated: string;
+  backupFrom?: string;
+};
+
+/** A reading as it comes in, with the relative humidity from the same station when it has a humidity sensor. */
+export type RawSensor = { lat: number; lon: number; pm25: number; pm10: number; age: number; rh: number | null };
+
+/** Above this relative humidity low-cost optical sensors count fog droplets as particles and read far too high. */
+export const HUMID = 90;
+
+/**
+ * Which citizen readings to trust. Left out:
+ *  - stuck or broken: zero, PM2.5 at the sensor's ceiling (999.9) or PM2.5 well above PM10 (impossible, PM2.5 is part of PM10);
+ *  - humid: the station's own humidity sensor reads HUMID% or more;
+ *  - odd: far above its neighbours within 5 km (more than 3 times their median and 30 µg/m³ over it), or far below
+ *    them when they read over 20, or over 250 µg/m³ with fewer than 3 neighbours to check it against. A chimney next to
+ *    one sensor is real, but it is not the air of the town.
+ */
+export function cleanSensors(raw: RawSensor[]): { sensors: SensorPoint[]; humid: number; odd: number } {
+  let humid = 0;
+  let odd = 0;
+  const sane = raw.filter((r) => {
+    const ok = r.pm25 > 0 && r.pm25 < 999 && r.pm10 > 0 && r.pm10 < 1999 && r.pm25 <= r.pm10 * 1.1 + 2;
+    if (!ok) odd++;
+    else if (r.rh != null && r.rh >= HUMID) humid++;
+    return ok && !(r.rh != null && r.rh >= HUMID);
+  });
+  const sensors: SensorPoint[] = [];
+  for (const r of sane) {
+    const near = sane.filter((o) => o !== r && distanceKm(r.lat, r.lon, o.lat, o.lon) <= 5).map((o) => o.pm25);
+    const m = median(near);
+    const bad = m == null || near.length < 3 ? r.pm25 > 250 : r.pm25 > Math.max(3 * m, m + 30) || (m > 20 && r.pm25 < m / 4);
+    if (bad) odd++;
+    else sensors.push([r.lat, r.lon, r.pm25, r.pm10, r.age]);
+  }
+  return { sensors, humid, odd };
+}
+
+/**
+ * The forecast from now on, made to agree with what is measured now: the gap between the sensors and the forecast for
+ * this hour is carried into the next hours and fades out over 12 hours, after which it is the plain forecast. This
+ * way the first hour of the chart is the number on the card, and the hours after it do not jump.
+ */
+export const BLEND_HOURS = 12;
+export function blend(ahead: Hour[], measured: { pm25: number | null; pm10: number | null } | null): Hour[] {
+  const h0 = ahead[0];
+  if (!h0 || !measured || measured.pm25 == null) return ahead;
+  const d25 = measured.pm25 - h0.pm25;
+  const d10 = measured.pm10 != null ? measured.pm10 - h0.pm10 : 0;
+  return ahead.map((h, k) => {
+    const w = Math.max(0, 1 - k / BLEND_HOURS);
+    if (!w) return h;
+    const pm25 = Math.round(Math.max(0, h.pm25 + d25 * w) * 10) / 10;
+    const pm10 = Math.round(Math.max(pm25, h.pm10 + d10 * w) * 10) / 10;
+    return { ...h, pm25, pm10, band: bandOf(pm25, pm10).key };
+  });
+}
 
 export function median(xs: number[]) {
   if (!xs.length) return null;
