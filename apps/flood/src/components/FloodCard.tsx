@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, RotateCw, Share2, ShieldAlert, Waves, TrendingUp, CalendarClock, Ruler } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, RotateCw, Share2, ShieldAlert, Waves, CalendarClock } from "lucide-react";
 import type { Loc } from "@shtit/core/client";
 import { oblastAt } from "@shtit/core/oblast";
 import { OBLASTS } from "@shtit/core/data/oblasts";
@@ -10,7 +10,7 @@ import { placeName } from "@shtit/core/i18n/names";
 import { APP_NAME } from "@/brand";
 import { GAUGES } from "@/data/gauges";
 import { LEVELS, NEAR_KM, levelByKey, levelText, type PlaceResponse } from "@/lib/flood-types";
-import { gaugeName, useFlow, vsNormalText } from "./bits";
+import { gaugeName } from "./bits";
 
 /** The day's flood danger for the place, as big and plain as a road sign. */
 export function FloodCard({
@@ -31,7 +31,6 @@ export function FloodCard({
   loc: Loc;
 }) {
   const { t, lang, nf, agoLong, inPlace, weekday } = useI18n();
-  const flow = useFlow();
 
   if (!data) {
     if (loading) return <div className="skeleton h-[320px] rounded-[20px]" aria-label={t("Зареждаме опасността за днес", "Loading today's danger")} />;
@@ -68,6 +67,16 @@ export function FloodCard({
   const vs = (d0?.median ?? 0) / Math.max(g.normal[month], 0.01);
   const d3 = river.days[Math.min(3, river.days.length - 1)];
   const change = d0 && d3 ? (d3.median - d0.median) / Math.max(d0.median, 0.1) : 0;
+  // One plain sentence instead of figures: how much water there is against the usual for the month, and where it goes.
+  const amount =
+    vs >= 3
+      ? { bg: "много повече от обичайното", en: "much higher than usual" }
+      : vs >= 1.5
+        ? { bg: "повече от обичайното", en: "higher than usual" }
+        : vs >= 0.85
+          ? { bg: "колкото обичайно", en: "at its usual level" }
+          : { bg: "по-малко от обичайното", en: "lower than usual" };
+  const trend = change > 0.1 ? { bg: " и се покачва", en: " and rising" } : change < -0.1 ? { bg: " и спада", en: " and falling" } : { bg: "", en: "" };
   const when = (date: string) => (date === d0?.date ? t("днес", "today") : lang === "bg" ? inPlace(weekday(date, "long")) : `on ${weekday(date, "long")}`);
 
   return (
@@ -97,42 +106,31 @@ export function FloodCard({
           </div>
         </div>
 
-        <ul className="flex flex-col gap-2 pt-5 text-[15px] font-medium leading-snug tabular-nums [&_svg]:mt-0.5 [&_svg]:shrink-0">
-          <li>
-            <button onClick={() => onRiver(g.id)} className="-mx-2 flex w-[calc(100%+16px)] items-start gap-2 rounded-xl px-2 py-1 text-left hover:bg-black/10">
-              <Waves size={18} strokeWidth={1.75} aria-hidden />
-              <span>
-                {gaugeName(g, lang)}
-                <span className="opacity-85">{river.km >= 1 ? t(`, на ${nf(river.km)} км`, `, ${nf(river.km)} km away`) : ""}</span>
-              </span>
-            </button>
-          </li>
-          <li className="flex items-start gap-2">
-            <Ruler size={18} strokeWidth={1.75} aria-hidden />
-            <span>
-              {flow(d0?.median ?? 0)} m³/s, {vsNormalText(vs, t, nf)}
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <TrendingUp size={18} strokeWidth={1.75} aria-hidden />
-            <span>
-              {change > 0.1
-                ? t("Расте през следващите 3 дни", "Rising over the next 3 days")
-                : change < -0.1
-                  ? t("Спада през следващите 3 дни", "Falling over the next 3 days")
-                  : t("Без голяма промяна до 3 дни", "Little change over 3 days")}
-            </span>
-          </li>
-          {peak.index > l.index && (
-            <li className="flex items-start gap-2">
-              <CalendarClock size={18} strokeWidth={1.75} aria-hidden />
-              <span>
-                {t(`До 15 дни: ${levelText(peak, "bg").label.toLowerCase()} ${when(river.peak.date)}`, `Within 15 days: ${levelText(peak, "en").label.toLowerCase()} ${when(river.peak.date)}`)}
-              </span>
-            </li>
-          )}
-        </ul>
+        <p className="pt-5 text-[17px] font-semibold leading-snug">
+          {t(`Водата в река ${g.river.bg} е ${amount.bg}${trend.bg}.`, `The ${g.river.en} is ${amount.en}${trend.en}.`)}
+        </p>
+        {peak.index > l.index && (
+          <p className="flex items-center gap-2 pt-1.5 text-[15px] font-medium leading-snug opacity-95">
+            <CalendarClock size={18} strokeWidth={1.75} className="shrink-0" aria-hidden />
+            {t(`${levelText(peak, "bg").label} опасност ${when(river.peak.date)}`, `${levelText(peak, "en").label} danger ${when(river.peak.date)}`)}
+          </p>
+        )}
       </div>
+
+      {/* Which river the rating comes from, and the way to its chart. A row, not text in the card, so it reads as a button. */}
+      <button onClick={() => onRiver(g.id)} className="pressable hover-fill mt-3 flex min-h-16 w-full items-center gap-3 rounded-[20px] bg-card px-4 py-3 text-left">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-tonal text-accent">
+          <Waves size={20} strokeWidth={1.9} aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-semibold leading-snug">{gaugeName(g, lang)}</span>
+          <span className="block text-[13px] text-muted">
+            {t("Оценката е по тази река", "The rating comes from this river")}
+            {river.km >= 1 && t(` · ${nf(river.km)} км`, ` · ${nf(river.km)} km`)}
+          </span>
+        </span>
+        <ChevronRight size={20} strokeWidth={2} className="shrink-0 text-muted" aria-hidden />
+      </button>
 
       <div className="flex gap-3 px-1 pt-4">
         <ShieldAlert size={22} strokeWidth={1.75} className="mt-0.5 shrink-0 text-content" aria-hidden />

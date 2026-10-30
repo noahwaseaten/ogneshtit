@@ -43,8 +43,17 @@ export function MapView() {
           </ul>
           <p className="px-1 text-[13px] leading-snug text-muted">
             {t(
-              "Всяка точка е граждански датчик на sensor.community. Групите са в цвета на средната стойност. При мъгла датчиците показват повече от истинското.",
-              "Each dot is a sensor.community citizen sensor. Groups take the colour of their median. In fog the sensors read too high.",
+              "Всяка точка е граждански датчик на sensor.community. Групите са в цвета на средната стойност.",
+              "Each dot is a sensor.community citizen sensor. Groups take the colour of their median.",
+            )}
+            {s.data?.hidden && s.data.hidden.humid + s.data.hidden.odd > 0 && (
+              <>
+                {" "}
+                {t(
+                  `Скрити са ${s.data.hidden.humid} датчика във влажен въздух (при мъгла броят капките за прах) и ${s.data.hidden.odd} с невъзможни или многократно по-високи от съседите стойности.`,
+                  `Hidden: ${s.data.hidden.humid} sensors in humid air (in fog they count droplets as dust) and ${s.data.hidden.odd} with impossible readings or many times their neighbours.`,
+                )}
+              </>
             )}
           </p>
         </div>

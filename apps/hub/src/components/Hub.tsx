@@ -9,7 +9,7 @@ import { BRANDS, REPO, TOOLS, seasonOrder, type AppId } from "@shtit/core/brand"
 import { Emblem, EmblemTile } from "@shtit/core/emblem";
 import type { AppSummary } from "@shtit/core/summary";
 import { LocationPicker } from "@shtit/core/ui/LocationPicker";
-import { Segmented } from "@shtit/core/ui/Settings";
+import { GithubIcon, Segmented } from "@shtit/core/ui/Settings";
 import { familyHref } from "@shtit/core/ui/Shell";
 
 const noop = () => () => {};
@@ -94,20 +94,48 @@ export function Hub() {
         ))}
       </section>
 
-      <footer className="flex flex-col gap-4 border-t border-line pt-6 text-[14px] text-muted sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-[60ch] leading-snug">
+      <footer className="flex flex-col gap-6 border-t border-line pt-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Emblem app="hub" size={32} />
+            <div>
+              <p className="font-display text-[18px] font-bold leading-tight">{BRANDS.hub.name[lang]}</p>
+              <p className="text-[14px] text-muted">{t("Въздух, вода и огън за България", "Air, water and fire for Bulgaria")}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a href={REPO} target="_blank" rel="noreferrer" className="pressable hover-fill inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-4 text-[15px] font-semibold">
+              <span className="size-[18px] [&_svg]:size-full">
+                <GithubIcon />
+              </span>
+              {t("Код в GitHub", "Code on GitHub")}
+            </a>
+            <a href="tel:112" className="pressable inline-flex min-h-11 items-center gap-2 rounded-full bg-[#c7361f] px-4 text-[15px] font-semibold text-white">
+              <Phone size={17} strokeWidth={2.25} aria-hidden />
+              {t("Спешно: 112", "Emergency: 112")}
+            </a>
+          </div>
+        </div>
+        <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[14px] font-medium">
+          {TOOLS.map((a) => (
+            <li key={a}>
+              <a href={familyHref(a, lang)} className="inline-flex min-h-11 items-center gap-2 hover:text-accent">
+                <EmblemTile app={a} size={22} inset={0.1} radius={6} />
+                {BRANDS[a].name[lang]}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p className="max-w-[70ch] text-[13px] leading-snug text-muted">
           {t(
-            "Щит не е официален източник и не заменя предупрежденията на властите. Направено от Камен, отворен код.",
-            "Shield is not an official source and does not replace warnings from the authorities. Made by Noah, open source.",
-          )}{" "}
-          <a href={REPO} target="_blank" rel="noreferrer" className="font-medium text-accent">
-            GitHub
+            "Щит не е официален източник и не заменя предупрежденията на властите. Безплатно и с отворен код. Направено от ",
+            "Shield is not an official source and does not replace warnings from the authorities. Free and open source. Made by ",
+          )}
+          <a href="https://noahwaseaten.com/" target="_blank" rel="noreferrer" className="font-medium text-content underline underline-offset-2">
+            {t("Камен", "Noah")}
           </a>
+          .
         </p>
-        <a href="tel:112" className="pressable inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#c7361f] px-5 text-[15px] font-semibold text-white">
-          <Phone size={18} strokeWidth={2} aria-hidden />
-          {t("Спешно: 112", "Emergency: 112")}
-        </a>
       </footer>
     </div>
   );
